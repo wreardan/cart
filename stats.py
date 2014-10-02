@@ -26,7 +26,7 @@ def max_index(l):
             return i
 
 
-def most_common(lst):
+def mode(lst):
     """http://stackoverflow.com/questions/1518522/python-most-common-element-in-a-list"""
     return max(set(lst), key=lst.count)
 

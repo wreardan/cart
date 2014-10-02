@@ -3,7 +3,7 @@ from copy import copy
 from random import shuffle
 
 from matrix import Matrix
-from stats import mean, most_common, regression_score
+from stats import mean, mode, regression_score
 
 
 MINIMUM_GAIN = 0.1
@@ -22,7 +22,7 @@ class TreeNode():
         in columns"""
         assert(len(matrix) > 0)
         if len(columns) <= 0:
-            self.classification = most_common(matrix.column(-1))
+            self.classification = mode(matrix.column(-1))
             return
         # Decide which column to split on
         min_error = 1000000000
@@ -37,14 +37,14 @@ class TreeNode():
         value = mean(matrix.column(min_index))
         left, right = matrix.split(min_index, value)
         if len(left) <= 0 or len(right) <= 0:
-            self.classification = most_common(matrix.column(-1))
+            self.classification = mode(matrix.column(-1))
             return
         left_score = regression_score(left, min_index)
         right_score = regression_score(right, min_index)
         gain = error-(left_score+right_score)
         # Stop recursing if below threshhold
         if gain < MINIMUM_GAIN:
-            self.classification = most_common(matrix.column(-1))
+            self.classification = mode(matrix.column(-1))
             return
         #print(gain, min_index, min_error)
         # Set self values
@@ -92,7 +92,7 @@ class Forest():
         for tree in self.trees:
             vote = tree.classify(row)
             votes.append(vote)
-        return most_common(votes)
+        return mode(votes)
 
 
 def evaluate(matrix, classifier):
