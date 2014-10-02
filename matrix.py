@@ -5,6 +5,9 @@ __author__ = 'wesley'
 
 
 class Matrix():
+    """Data Structure for 2-dimensional data.  You can load and
+    save this data structure to files.  You can also slice this
+    data in various ways using .submatrix()"""
     def __init__(self, rows=0, columns=0, default=0.0):
         self.elements = [[default for _ in range(columns)] for _ in range(rows)]
         self.row_labels = []
@@ -67,6 +70,12 @@ class Matrix():
         return len(self.elements), len(self.elements[0])
 
     def submatrix(self, rows, columns):
+        """
+        return a submatrix (does not modify matrix). order DOES matter
+        :param rows: list of rows to be included in sub-matrix
+        :param columns: list of columns to be included in sub-matrix
+        :return:
+        """
         s = Matrix(len(rows), len(columns))
         s.elements = [[self.elements[i][j] for j in columns] for i in rows]
         return s

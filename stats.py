@@ -85,3 +85,26 @@ def test_regression():
     m, b = basic_linear_regression(x, y)
     print(m, b)
     print(sum_of_squares(x, y, m, b))
+
+
+def chi2(distribution1, distribution2, degrees_of_freedom=2):
+    """
+    X^2 test for two distributions
+    source: Tyler Harter, cs776 hw#3, mdd.predict.py:Node.chi_squared()
+    :param distribution1: list of counts
+    :param distribution2: list of counts
+    :return: X^2 score
+    """
+    sum1 = sum(distribution1)
+    sum2 = sum(distribution2)
+    total = float(sum1 + sum2)
+    score = 0.0
+    for count1, count2 in zip(distribution1, distribution2):
+        rowsum = count1 + count2
+        expected1 = (rowsum / total) * sum1
+        expected2 = (rowsum / total) * sum2
+        if expected1 != 0:
+            score += (count1 - expected1) ** 2 / expected1
+        if expected2 != 0:
+            score += (count2 - expected2) ** 2 / expected2
+    return score
