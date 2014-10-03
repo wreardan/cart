@@ -98,6 +98,9 @@ class Forest():
 
 
 def parallel_train(state):
+    """function to train trees in another process
+    state is (matrix, columns) because we cannot use
+    a starmap in Python < 3.3 """
     matrix, columns = state
     #m = Matrix()
     #m.load(matrix_filename)
@@ -116,8 +119,9 @@ def column_set(columns, number):
 
 class ParallelForest(Forest):
     """A parallel implementation of Random Forest.
-    It starts a group of Processes then passes work to
-    these Processes in a Queue"""
+    It starts a Pool of processes, then uses map to create a
+    set of trees.  Classification is still done in serial:
+    inherits Forest's classify method."""
     def __init__(self, n_trees=100, n_features=10, n_processes=2):
         self.n_trees = n_trees
         self.n_features = n_features
