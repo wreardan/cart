@@ -36,7 +36,7 @@ class Matrix():
             # Write elements
             for i, row in enumerate(self.elements):
                 string = self.row_labels[i]
-                string += '\t'.join(map(str, row))
+                string += '\t'.join(map(str, row)) + '\n'
                 f.write(string)
 
     def load(self, filename, datatype=float, col_headers=True, row_headers=True):
@@ -129,7 +129,8 @@ class Matrix():
 
     def merge(self, other):
         """Merge another matrix with this Matrix,
-        based on row_labels"""
+        based on row_labels
+        Assumes use of row_labels in both matrices"""
         # Append columns
         for label in other.column_labels:
             self.column_labels.append(label)
