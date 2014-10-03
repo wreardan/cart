@@ -36,7 +36,7 @@ class Matrix():
             # Write elements
             for i, row in enumerate(self.elements):
                 string = self.row_labels[i]
-                string += '\t'.join(map(float, row))
+                string += '\t'.join(map(str, row))
                 f.write(string)
 
     def load(self, filename, datatype=float, col_headers=True, row_headers=True):
