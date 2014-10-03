@@ -160,7 +160,7 @@ def main():
     percent = right * 100.0 / len(train)
     print('percentage correct=%f' % percent)
     # Evaluate Random Forest Method
-    forest = ParallelForest(10, train.columns()-1, 16)
+    forest = ParallelForest(1000, train.columns()-1, 16)
     forest.train(train)
     right, wrong = evaluate(train, forest)
     percent = right * 100.0 / len(train)
