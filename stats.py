@@ -3,32 +3,39 @@ __author__ = 'wesley'
 
 
 def mean(x):
+    """O(N)"""
     return float(sum(x)) / len(x)
 
 
 def median(x):
+    """O(N*log(N))"""
     midpoint_index = len(x) // 2
     midpoint = sorted(x)[midpoint_index]
     return midpoint
 
 
-def min_index(l):
-    minimum = min(l)
-    for i, val in enumerate(l):
+def min_index(x):
+    """O(2N)"""
+    minimum = min(x)
+    for i, val in enumerate(x):
         if val == minimum:
             return i
 
 
-def max_index(l):
-    minimum = max(l)
-    for i, val in enumerate(l):
+def max_index(x):
+    """O(2N)"""
+    minimum = max(x)
+    for i, val in enumerate(x):
         if val == minimum:
             return i
 
 
-def mode(lst):
-    """http://stackoverflow.com/questions/1518522/python-most-common-element-in-a-list"""
-    return max(set(lst), key=lst.count)
+def mode(x):
+    """
+    return the most common element in a list
+    source: http://stackoverflow.com/questions/1518522/python-most-common-element-in-a-list
+    """
+    return max(set(x), key=x.count)
 
 
 def basic_linear_regression(x, y):
@@ -80,6 +87,7 @@ def regression_score(matrix, column):
 
 
 def test_regression():
+    # TODO: make this into a series of unit tests
     x = [0, 1, 2]
     y = [3, 5, 8]
     m, b = basic_linear_regression(x, y)
@@ -107,4 +115,11 @@ def chi2(distribution1, distribution2, degrees_of_freedom=2):
             score += (count1 - expected1) ** 2 / expected1
         if expected2 != 0:
             score += (count2 - expected2) ** 2 / expected2
+    return score
+
+
+def chi2_score(matrix, column):
+    x = matrix.column(column)
+    y = matrix.column(-1)
+    score = chi2(x, y)
     return score

@@ -3,7 +3,7 @@ from copy import copy
 from random import shuffle
 
 from matrix import Matrix
-from stats import mean, mode, regression_score
+from stats import mean, mode, regression_score, chi2_score
 
 
 MINIMUM_GAIN = 0.1
@@ -27,6 +27,7 @@ class TreeNode():
         # Decide which column to split on
         min_error = 1000000000
         min_index = columns[0]
+        error = min_error
         for col_index in columns:
             error = regression_score(matrix, col_index)
             #print(col_index, error)
@@ -39,9 +40,9 @@ class TreeNode():
         if len(left) <= 0 or len(right) <= 0:
             self.classification = mode(matrix.column(-1))
             return
-        left_score = regression_score(left, min_index)
-        right_score = regression_score(right, min_index)
-        gain = error-(left_score+right_score)
+        left_error = regression_score(left, min_index)
+        right_error = regression_score(right, min_index)
+        gain = error-(left_error+right_error)
         # Stop recursing if below threshhold
         if gain < MINIMUM_GAIN:
             self.classification = mode(matrix.column(-1))

@@ -20,13 +20,15 @@ class Matrix():
         return len(self.elements)
 
     def columns(self):
+        """Return the number of columns in the matrix"""
         return len(self.elements[0])
 
     def column(self, index):
+        """Get an array of column values at index"""
         return [row[index] for row in self.elements]
 
     def save(self, filename):
-        """Save matrix to tab-seperated file"""
+        """Save matrix to tab-separated file"""
         with open(filename, 'w') as f:
             # Write Header
             header = '\t'.join(self.column_labels) + '\n'
@@ -39,12 +41,11 @@ class Matrix():
 
     def load(self, filename, datatype=float, col_headers=True, row_headers=True):
         """
-        load a matrix from a tab-seperated file
+        load a matrix from a tab-separated file
         :param filename: string path of file to load
         :param col_headers: true if first row is column_labels
         :param row_headers: true if first element in row is the label
         :param datatype: type to cast values to, i.e. int, float, etc.
-        :param col_headers: boolean. True if there are column labels on first row
         :return: None
         """
         self.elements = []
@@ -64,9 +65,10 @@ class Matrix():
 
     def flatten(self):
         """flatten the matrix into a 1d array"""
-        pass
+        return [element for row in self.elements for element in row]
 
     def dimensions(self):
+        """return a tuple of (rows, columns)"""
         return len(self.elements), len(self.elements[0])
 
     def submatrix(self, rows, columns):
@@ -81,24 +83,29 @@ class Matrix():
         return s
 
     def transpose(self):
+        """exchange rows and columns"""
         rows, cols = self.dimensions()
         result = Matrix(cols, rows)
         result.elements = [[self.elements[i][j] for i in range(rows)] for j in range(cols)]
         return result
 
     def random_split(self):
-        N = len(self)
+        """randomly split the matrix elements into two matrices of
+        equal size"""
+        num_rows = len(self)
         rows = list(range(len(self.elements)))
-        cols = list(range(self.columns()))
+        all_cols = list(range(self.columns()))
         shuffle(rows)
-        a = rows[:N//2]
-        b = rows[N/2:]
-        A = self.submatrix(a, cols)
-        B = self.submatrix(b, cols)
-        assert(len(A) + len(B) == N)
-        return A, B
+        a_rows = rows[:num_rows//2]
+        b_rows = rows[num_rows/2:]
+        a = self.submatrix(a_rows, all_cols)
+        b = self.submatrix(b_rows, all_cols)
+        assert(len(a) + len(b) == num_rows)
+        return a, b
 
     def split(self, column, value):
+        """split the matrices into two submatrices based on
+        a column's value"""
         left = Matrix()
         right = Matrix()
         for row in self.elements:
@@ -120,5 +127,8 @@ def test_matrix():
     print(m.column(2))
     s = m.submatrix(range(4), [2])
     print(s.elements)
-    print()
     print(m.transpose().elements)
+    print(m.flatten())
+
+if __name__ == '__main__':
+    test_matrix()
