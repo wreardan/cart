@@ -97,7 +97,8 @@ class Forest():
         return mode(votes)
 
 
-def parallel_train(matrix, columns):
+def parallel_train(state):
+    matrix, columns = state
     #m = Matrix()
     #m.load(matrix_filename)
     m = matrix
@@ -126,7 +127,7 @@ class ParallelForest(Forest):
     def train(self, matrix):
         all_columns = list(range(matrix.columns()-1))
         star = [(matrix, column_set(all_columns, self.n_features)) for _ in range(self.n_trees)]
-        self.trees = self.pool.starmap(parallel_train, star)
+        self.trees = self.pool.map(parallel_train, star)
 
 
 def evaluate(matrix, classifier):
@@ -159,7 +160,7 @@ def main():
     percent = right * 100.0 / len(train)
     print('percentage correct=%f' % percent)
     # Evaluate Random Forest Method
-    forest = ParallelForest(10, train.columns()-1, 4)
+    forest = ParallelForest(10, train.columns()-1, 16)
     forest.train(train)
     right, wrong = evaluate(train, forest)
     percent = right * 100.0 / len(train)
