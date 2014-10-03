@@ -80,8 +80,10 @@ class Matrix():
         """
         s = Matrix(len(rows), len(columns))
         s.elements = [[self.elements[i][j] for j in columns] for i in rows]
-        s.row_labels = [self.row_labels[i] for i in rows]
-        s.column_labels = [self.column_labels[j] for j in columns]
+        if len(self.row_labels) > 0:
+            s.row_labels = [self.row_labels[i] for i in rows]
+        if len(self.column_labels) > 0:
+            s.column_labels = [self.column_labels[j] for j in columns]
         return s
 
     def transpose(self):
