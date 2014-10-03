@@ -80,6 +80,8 @@ class Matrix():
         """
         s = Matrix(len(rows), len(columns))
         s.elements = [[self.elements[i][j] for j in columns] for i in rows]
+        s.row_labels = [self.row_labels[i] for i in rows]
+        s.column_labels = [self.column_labels[j] for j in columns]
         return s
 
     def transpose(self):
@@ -87,6 +89,8 @@ class Matrix():
         rows, cols = self.dimensions()
         result = Matrix(cols, rows)
         result.elements = [[self.elements[i][j] for i in range(rows)] for j in range(cols)]
+        result.column_labels = self.row_labels
+        result.row_labels = self.column_labels
         return result
 
     def random_split(self):
@@ -114,6 +118,25 @@ class Matrix():
             else:
                 right.elements.append(copy(row))
         return left, right
+
+    def get_row(self, label):
+        """Get a row based on its label"""
+        row_index = self.row_labels.index(label)
+        assert(row_index != -1)
+        return self.elements[row_index]
+
+    def merge(self, other):
+        """Merge another matrix with this Matrix,
+        based on row_labels"""
+        # Append columns
+        for label in other.column_labels:
+            self.column_labels.append(label)
+        # Add elements
+        for label in other.row_labels:
+            row = self.get_row(label)
+            other_row = other.get_row(label)
+            for element in other_row:
+                row.append(element)
 
 
 def test_matrix():
