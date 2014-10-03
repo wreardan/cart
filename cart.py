@@ -1,9 +1,10 @@
 import sys
 from copy import copy
 from random import shuffle
+from multiprocessing.pool import Pool
 
 from matrix import Matrix
-from stats import mean, mode, regression_score, chi2_score
+from stats import mean, mode, regression_score
 
 
 MINIMUM_GAIN = 0.1
@@ -74,7 +75,7 @@ class Forest():
     feature sets.  These trees vote on a classification
     to determine the final class."""
     def __init__(self, n_trees=100, n_features=10):
-        self.n_tress = n_trees
+        self.n_trees = n_trees
         self.n_features = n_features
         self.trees = []
         for i in range(n_trees):
@@ -94,6 +95,38 @@ class Forest():
             vote = tree.classify(row)
             votes.append(vote)
         return mode(votes)
+
+
+def parallel_train(matrix, columns):
+    #m = Matrix()
+    #m.load(matrix_filename)
+    m = matrix
+    root = TreeNode()
+    root.train(m, columns)
+    return root
+
+
+def column_set(columns, number):
+    """returns a random subset of columns of size number.
+    Note: modifies columns"""
+    shuffle(columns)
+    return columns[:number]
+
+
+class ParallelForest(Forest):
+    """A parallel implementation of Random Forest.
+    It starts a group of Processes then passes work to
+    these Processes in a Queue"""
+    def __init__(self, n_trees=100, n_features=10, n_processes=2):
+        self.n_trees = n_trees
+        self.n_features = n_features
+        self.pool = Pool(n_processes)
+        self.trees = []
+
+    def train(self, matrix):
+        all_columns = list(range(matrix.columns()-1))
+        star = [(matrix, column_set(all_columns, self.n_features)) for _ in range(self.n_trees)]
+        self.trees = self.pool.starmap(parallel_train, star)
 
 
 def evaluate(matrix, classifier):
@@ -119,14 +152,14 @@ def main():
     #test.load(sys.argv[2])
     # Train a single regression tree
     root = TreeNode()
-    cols = range(train.columns()-1)
+    cols = list(range(train.columns()-1))
     root.train(train, cols)
     # Evaluate results against original training set
     right, wrong = evaluate(train, root)
     percent = right * 100.0 / len(train)
     print('percentage correct=%f' % percent)
     # Evaluate Random Forest Method
-    forest = Forest(1000, train.columns()-1)
+    forest = ParallelForest(10, train.columns()-1, 4)
     forest.train(train)
     right, wrong = evaluate(train, forest)
     percent = right * 100.0 / len(train)

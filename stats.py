@@ -119,7 +119,19 @@ def chi2(distribution1, distribution2, degrees_of_freedom=2):
 
 
 def chi2_score(matrix, column):
+    """chi2 score for column against classification"""
     x = matrix.column(column)
     y = matrix.column(-1)
     score = chi2(x, y)
     return score
+
+
+def chi2_score2(matrix, column):
+    """chi2 score for column against other columns"""
+    score = 0.0
+    x = matrix.column(column)
+    for j in range(matrix.columns()-1):
+        if j != column:
+            y = matrix.column(j)
+            score += chi2(x, y)
+    return score / ((matrix.columns() - 1) ** 2)
