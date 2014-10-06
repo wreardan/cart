@@ -41,7 +41,7 @@ double mode(const vector<double> & list) {
 		}
 	}
 	//http://stackoverflow.com/questions/9370945/c-help-finding-the-max-value-in-a-map
-	auto max = max_element(repeats.begin(), repeats.end(), 
+	map<double, int>::iterator max = max_element(repeats.begin(), repeats.end(), 
 		[](const pair<double, int>& p1, const pair<double, int>& p2) {
         return p1.second < p2.second; }
    	);

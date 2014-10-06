@@ -8,6 +8,8 @@ using namespace std;
 #include "forest.hpp"
 #include "parallel_forest.hpp"
 
+int threads;
+
 double test(Classifier * c, Matrix & m) {
 	//Analyze the results of the tree against training dataset
 	int right = 0;
@@ -31,7 +33,7 @@ void train_and_test(Matrix & matrix) {
 	vector<Classifier*> classifiers;
 	//classifiers.push_back(new TreeNode());
 	//classifiers.push_back(new Forest(1000, matrix.columns()-1));
-	classifiers.push_back(new ParallelForest(1000, matrix.columns()-1, 4));
+	classifiers.push_back(new ParallelForest(1000, matrix.columns()-1, threads));
 
 	for(int i = 0; i < classifiers.size(); i++) {
 		Classifier * classifier = classifiers[i];
@@ -44,7 +46,9 @@ void train_and_test(Matrix & matrix) {
 
 int main(int argc, char *argv[]) {
 	string filename(argv[1]);
-	string output_filename(argv[2]);
+	threads = atoi(argv[2]);
+	if(threads <= 0) threads = 16;
+	cout << " threads " << threads << endl;
 	//matrix
 	Matrix m;
 	m.load(filename);
