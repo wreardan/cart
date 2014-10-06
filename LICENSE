@@ -1,0 +1,8 @@
+LICENSE
+
+Classification and Regression Tree Software
+Programmed by Wesley Reardan
+Released under the GPL License
+
+uses
+pthread_pool from https://github.com/jonhoo/pthread_pool under the MIT license

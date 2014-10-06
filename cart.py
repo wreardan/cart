@@ -162,13 +162,13 @@ def main():
     # Evaluate results against original training set
     right, wrong = evaluate(train, root)
     percent = right * 100.0 / len(train)
-    print('percentage correct=%f' % percent)
+    print('training set recovered: %f%%' % percent)
     # Evaluate Random Forest Method
     forest = ParallelForest(1000, train.columns()-1, 16)
     forest.train(train)
     right, wrong = evaluate(train, forest)
     percent = right * 100.0 / len(train)
-    print('percentage correct=%f' % percent)
+    print('training set recovered: %f%%' % percent)
 
 
 if __name__ == '__main__':

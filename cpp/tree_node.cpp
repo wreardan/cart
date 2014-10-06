@@ -56,6 +56,12 @@ double regression_score(Matrix & matrix, int col_index) {
 	return error;
 }
 
+void TreeNode::train(Matrix & m) {
+	cout << "tree training" << endl;
+	vector<int> columns = range(m.columns()-1);
+	train(m, columns);
+}
+
 void TreeNode::train(Matrix & m, vector<int> columns) {
 	//cout << "training on " << join(columns, ' ') << endl;
 	//Edge cases:
@@ -113,9 +119,11 @@ int TreeNode::classify(vector<double> & row) {
 		return classification;
 	}
 	if(row[column] < value) {
+		assert(left != NULL);
 		return left->classify(row);
 	}
 	else {
+		assert(right != NULL);
 		return right->classify(row);
 	}
 }

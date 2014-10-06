@@ -1,11 +1,12 @@
 #pragma once
 
+#include "classifier.hpp"
 #include "matrix.hpp"
 
 #include <string>
 using std::string;
 
-class TreeNode {
+class TreeNode : public Classifier {
 private:
 	TreeNode * left;
 	TreeNode * right;
@@ -19,5 +20,6 @@ public:
 	void dump(string indent);
 	int count();
 	void train(Matrix & m, vector<int> columns);
-	int classify(vector<double> & row);
+	virtual void train(Matrix & m);
+	virtual int classify(vector<double> & row);
 };
