@@ -45,17 +45,8 @@ void train_and_test(Matrix & matrix) {
 	}
 }
 
-int main(int argc, char *argv[]) {
-	string filename(argv[1]);
-	threads = atoi(argv[2]);
-	if(threads <= 0) threads = 16;
-	cout << " threads " << threads << endl;
-	//matrix
-	Matrix m;
-	m.load(filename);
-	cout << m.rows() << " rows and " << m.columns() << " columns in matrix" << endl;
+void test_matrix(Matrix & m) {
 	//Matrix testing
-	/*
 	Matrix m1, m2;
 	m.split(1, 0.001, m1, m2);
 	cout << m1.rows() << "\t" << m2.rows() << endl;
@@ -67,12 +58,18 @@ int main(int argc, char *argv[]) {
 	vector<int> columns = range(m.columns()-1);
 	root.train(m, columns);
 	cout << root.count() << " nodes in tree" << endl;
+}
 
+int main(int argc, char *argv[]) {
+	string filename(argv[1]);
+	threads = atoi(argv[2]);
+	if(threads <= 0) threads = 16;
+	cout << " threads " << threads << endl;
+	//matrix
+	Matrix m;
+	m.load(filename);
+	cout << m.rows() << " rows and " << m.columns() << " columns in matrix" << endl;
 
-	//Random Forest
-	Forest f(100, 20);
-	f.train(m);
-*/
 	//Run classifiers
 	train_and_test(m);
 

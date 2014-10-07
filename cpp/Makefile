@@ -9,4 +9,4 @@ debugger: debug
 	gdb ./randomForest
 
 valgrind: debug
-	valgrind ./randomForest ../data/H1hesc_allforward_features.txt 2
+	valgrind --leak-check=full ./randomForest ../data/H1hesc_allforward_features.txt 2
