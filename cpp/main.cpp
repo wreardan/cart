@@ -33,7 +33,7 @@ void train_and_test(Matrix & matrix) {
 	vector<Classifier*> classifiers;
 	//classifiers.push_back(new TreeNode());
 	//classifiers.push_back(new Forest(1000, matrix.columns()-1));
-	classifiers.push_back(new ParallelForest(1000, matrix.columns()-1, threads));
+	classifiers.push_back(new ParallelForest(10, matrix.columns()-1, threads));
 
 	for(int i = 0; i < classifiers.size(); i++) {
 		Classifier * classifier = classifiers[i];
