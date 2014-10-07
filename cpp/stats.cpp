@@ -28,24 +28,31 @@ double mean(const vector<double> & list) {
 	return sum(list) / list.size();
 }
 
-double mode(const vector<double> & list) {
-	map<double, int> repeats;
-	for(int i = 0; i < list.size(); i++) {
-		double value = list[i];
-		if(repeats.find(value) == repeats.end()) {
-			//not found
-			repeats[value] = 1;
-		}
-		else {
-			repeats[value] += 1;
-		}
-	}
-	//http://stackoverflow.com/questions/9370945/c-help-finding-the-max-value-in-a-map
-	map<double, int>::iterator max = max_element(repeats.begin(), repeats.end(), 
-		[](const pair<double, int>& p1, const pair<double, int>& p2) {
-        return p1.second < p2.second; }
-   	);
-	return (*max).first;
+//http://xoax.net/cpp/ref/cpp_examples/incl/mean_med_mod_array/
+double mode(const vector<double> & daArray) {
+    // Allocate an int array of the same size to hold the
+    // repetition count
+    int iSize = daArray.size();
+    int* ipRepetition = new int[iSize];
+    for (int i = 0; i < iSize; ++i) {
+        ipRepetition[i] = 0;
+        int j = 0;
+        bool bFound = false;
+        while ((j < i) && (daArray[i] != daArray[j])) {
+            if (daArray[i] != daArray[j]) {
+                ++j;
+            }
+        }
+        ++(ipRepetition[j]);
+    }
+    int iMaxRepeat = 0;
+    for (int i = 1; i < iSize; ++i) {
+        if (ipRepetition[i] > ipRepetition[iMaxRepeat]) {
+            iMaxRepeat = i;
+        }
+    }
+    delete [] ipRepetition;
+    return daArray[iMaxRepeat];
 }
 
 double covariance(const vector<double> & dist1, const vector<double> & dist2) {

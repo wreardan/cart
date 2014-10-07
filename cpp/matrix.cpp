@@ -2,6 +2,7 @@
 #include "util.hpp"
 
 #include <cassert>
+#include <cstdlib>
 
 #include <fstream>
 #include <string>
@@ -13,7 +14,7 @@ Matrix::Matrix() {
 }
 
 void Matrix::load(string filename, bool use_column_labels, bool use_row_labels) {
-	ifstream file(filename);
+	ifstream file(filename.c_str());
 	string line;
 	int line_number = 0;
 	while(getline(file, line)) {
@@ -35,7 +36,7 @@ void Matrix::load(string filename, bool use_column_labels, bool use_row_labels) 
 			}
 			vector<double> row;
 			for(int i = 0; i < tokens.size(); i++) {
-				double element = stod(tokens[i]);
+				double element = atof(tokens[i].c_str());
 				row.push_back(element);
 			}
 			elements.push_back(row);
@@ -46,7 +47,7 @@ void Matrix::load(string filename, bool use_column_labels, bool use_row_labels) 
 }
 
 void Matrix::save(string filename) {
-	ofstream file(filename);
+	ofstream file(filename.c_str());
 	//Write column header
 	if(column_labels.size() > 0) {
 		file << join(column_labels, '\t');
