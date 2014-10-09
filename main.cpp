@@ -37,7 +37,7 @@ double test(Classifier * c, Matrix & m, vector<int> & classes) {
 	return percent;
 }
 
-void train_and_test(Matrix & matrix) {
+void train_only(Matrix & matrix) {
 	vector<Classifier*> classifiers;
 	vector<int> classes;
 	//Other classifier commented out:
@@ -56,6 +56,47 @@ void train_and_test(Matrix & matrix) {
 		classifier->train(matrix);
 		double percent = test(classifier, matrix, classes);
 		cout << "training set recovered: " << percent << "%" << endl;
+	}
+}
+
+void train_and_test(Matrix & train, Matrix & testing) {
+	ParallelForest forest(n_trees, n_features, threads);
+	forest.train(train);
+	vector<int> classes;
+	Classifier * classifier = &forest;
+	double percent = test(classifier, testing, classes);
+	cout << percent << "% correct" << endl;
+	//dump classes to file
+
+}
+
+void folded_train_and_test(Matrix & matrix, int n_folds) {
+	int R = matrix.rows();
+	int N = R / n_folds;
+	vector<int> all_columns = range(0,matrix.columns());
+	for(int i = 0; i < n_folds; i++) {
+		cout << "Training and Testing Fold #" << i << endl;
+		ParallelForest forest(n_trees, n_features, threads);
+		//Get training subset
+		vector<int> training_rows;
+		//beginning fold
+		if(i == 0) {
+			training_rows = range(N, R);
+		}
+		//middle fold
+		else if(i < n_folds-1) {
+			training_rows = merge(range(0,i*N), range((i+1)*N,R));
+		}
+		//last fold
+		else {
+			training_rows = range(0, R-N);
+		}
+		Matrix training = matrix.submatrix(training_rows, all_columns);
+		//Get testing subset
+		vector<int> testing_rows = range(i*N, (i+1)*N);
+		Matrix testing = matrix.submatrix(testing_rows, all_columns);
+		//Test
+		train_and_test(training, testing);
 	}
 }
 
@@ -91,13 +132,19 @@ int main(int argc, char *argv[]) {
 	char * cvalue = NULL;
 	int c;
 	string filename;
+	string test_filename;
 	while((c = getopt(argc, argv, "t:c:p:n:f:m:")) != -1) {
 		switch(c) {
+
+		//Required arguments:
 		case 't': //training file
 			filename = optarg;
 			break;
 		case 'c': //data to classify
+			test_filename = optarg;
 			break;
+
+		//Optional arguments:
 		case 'p': //number of threads
 			threads = atoi(optarg);
 			break;
@@ -111,19 +158,25 @@ int main(int argc, char *argv[]) {
 			break;
 		case 'm': //minimum gain
 			break;
+
 		default:
 			exit(1);
 		}
 	}
 	if(threads <= 0) threads = 16;
 	cout << "using " << threads << " threads in pool" << endl;
-	//matrix
+	//Trainig matrix
 	Matrix m;
 	m.load(filename);
-	cout << m.rows() << " rows and " << m.columns() << " columns in matrix" << endl;
+	cout << "train matrix: " << m.rows() << " rows and " << m.columns() << " columns in matrix" << endl;
+
+	//Testing matrix
+	Matrix test;
+	test.load(test_filename);
+	cout << "test matrix: " << test.rows() << " rows and " << test.columns() << " columns in matrix" << endl;
 
 	//Run classifiers
-	train_and_test(m);
+	folded_train_and_test(m, 10);
 
 	return 0;
 }

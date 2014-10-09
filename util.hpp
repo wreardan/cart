@@ -46,6 +46,16 @@ std::string inline join(std::vector<T> & list, const char delimiter) {
     return ss.str();
 }
 
+//i.e. double<int> = merge(range(0, 10), range(15, 20));
+//immutable
+vector<int> inline merge(vector<int> a, vector<int> b) {
+    //add second array
+    for(int i = 0; i < b.size(); i++) {
+        a.push_back(b[i]);
+    }
+    return a;
+}
+
 //Similar to Python's range() function
 //Returns a list of integers representing the range
 vector<int> inline range(int start, int stop=-1, int step=1) {
