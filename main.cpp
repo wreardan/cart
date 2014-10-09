@@ -100,6 +100,8 @@ void folded_train_and_test(Matrix & input_matrix, int n_folds) {
 		//Test
 		total_percent += train_and_test(training, testing);
 	}
+	double percent = total_percent * 100.0 / n_folds;
+	cout << "Percent recovered: " << percent << "%\n";
 }
 
 void test_matrix(Matrix & m) {
