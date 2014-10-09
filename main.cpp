@@ -59,7 +59,7 @@ void train_only(Matrix & matrix) {
 	}
 }
 
-void train_and_test(Matrix & train, Matrix & testing) {
+double train_and_test(Matrix & train, Matrix & testing) {
 	ParallelForest forest(n_trees, n_features, threads);
 	forest.train(train);
 	vector<int> classes;
@@ -67,7 +67,7 @@ void train_and_test(Matrix & train, Matrix & testing) {
 	double percent = test(classifier, testing, classes);
 	cout << percent << "% correct" << endl;
 	//dump classes to file
-
+	return percent;
 }
 
 void folded_train_and_test(Matrix & input_matrix, int n_folds) {
@@ -75,6 +75,7 @@ void folded_train_and_test(Matrix & input_matrix, int n_folds) {
 	int R = matrix.rows();
 	int N = R / n_folds;
 	vector<int> all_columns = range(0,matrix.columns());
+	double total_percent = 0.0;
 	for(int i = 0; i < n_folds; i++) {
 		cout << "Training and Testing Fold #" << i << endl;
 		ParallelForest forest(n_trees, n_features, threads);
@@ -97,7 +98,7 @@ void folded_train_and_test(Matrix & input_matrix, int n_folds) {
 		vector<int> testing_rows = range(i*N, (i+1)*N);
 		Matrix testing = matrix.submatrix(testing_rows, all_columns);
 		//Test
-		train_and_test(training, testing);
+		total_percent += train_and_test(training, testing);
 	}
 }
 

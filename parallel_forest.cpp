@@ -51,5 +51,6 @@ void ParallelForest::train(Matrix & m) {
 	}
 	//JOIN on all
 	pool_wait(pool);
+	//Free resources
+	pool_end(pool);
 }
-
