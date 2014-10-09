@@ -70,7 +70,8 @@ void train_and_test(Matrix & train, Matrix & testing) {
 
 }
 
-void folded_train_and_test(Matrix & matrix, int n_folds) {
+void folded_train_and_test(Matrix & input_matrix, int n_folds) {
+	Matrix matrix = input_matrix.shuffled();
 	int R = matrix.rows();
 	int N = R / n_folds;
 	vector<int> all_columns = range(0,matrix.columns());

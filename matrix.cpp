@@ -4,13 +4,14 @@
 #include <cassert>
 #include <cstdlib>
 
+#include <algorithm>
 #include <fstream>
 #include <string>
 #include <iostream>
 using namespace std;
 
 Matrix::Matrix() {
-	
+
 }
 
 void Matrix::load(string filename, bool use_column_labels, bool use_row_labels) {
@@ -147,3 +148,13 @@ void Matrix::split(int column_index, double value, Matrix & m1, Matrix & m2) {
 	m2 = submatrix(m2_rows, all_cols);
 }
 
+//This function returns a shuffled version of the Matrix
+//shuffles rows only
+//immutable
+Matrix Matrix::shuffled() {
+	//generate a row_index_list
+	vector<int> row_indices = range(rows());
+	random_shuffle(row_indices.begin(), row_indices.end());
+	vector<int> column_indices = range(columns());
+	return submatrix(row_indices, column_indices);
+}

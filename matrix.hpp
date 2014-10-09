@@ -20,6 +20,7 @@ public:
 	vector<double> column(int index);
 	Matrix submatrix(vector<int> rows, vector<int> columns);
 	void split(int column_index, double value, Matrix & m1, Matrix & m2);
+	Matrix shuffled();
 	//Bracket overloaded operator:
 	vector<double> & operator[](int i);
 };
