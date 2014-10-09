@@ -16,13 +16,15 @@ int threads = 16;
 int n_trees = 1000;
 int n_features = -1;
 
-double test(Classifier * c, Matrix & m) {
+double test(Classifier * c, Matrix & m, vector<int> & classes) {
+	classes.empty();
 	//Analyze the results of the tree against training dataset
 	int right = 0;
 	int wrong = 0;
 	for(int i = 0; i < m.rows(); i++) {
 		vector<double> & row = m[i];
 		int actual_class = c->classify(row);
+		classes.push_back(actual_class);
 		int expected_class = row[row.size()-1];
 		if(actual_class == expected_class) {
 			right++;
@@ -37,6 +39,7 @@ double test(Classifier * c, Matrix & m) {
 
 void train_and_test(Matrix & matrix) {
 	vector<Classifier*> classifiers;
+	vector<int> classes;
 	//Other classifier commented out:
 	//classifiers.push_back(new TreeNode());
 	//classifiers.push_back(new Forest(1000, matrix.columns()-1));
@@ -49,9 +52,9 @@ void train_and_test(Matrix & matrix) {
 
 	for(int i = 0; i < classifiers.size(); i++) {
 		Classifier * classifier = classifiers[i];
-		cout << "training classifier #" << i << endl;
+		//cout << "training classifier #" << i << endl;
 		classifier->train(matrix);
-		double percent = test(classifier, matrix);
+		double percent = test(classifier, matrix, classes);
 		cout << "training set recovered: " << percent << "%" << endl;
 	}
 }
@@ -69,6 +72,18 @@ void test_matrix(Matrix & m) {
 	vector<int> columns = range(m.columns()-1);
 	root.train(m, columns);
 	cout << root.count() << " nodes in tree" << endl;
+}
+
+void test_stats() {
+	//stats
+	test_regression();
+	vector<double> test_mode;
+	test_mode.push_back(1.0);
+	test_mode.push_back(2.0);
+	test_mode.push_back(5.0);
+	test_mode.push_back(2.0);
+	test_mode.push_back(7.0);
+	cout << mode(test_mode) << endl;
 }
 
 int main(int argc, char *argv[]) {
@@ -101,7 +116,7 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	if(threads <= 0) threads = 16;
-	cout << " threads " << threads << endl;
+	cout << "using " << threads << " threads in pool" << endl;
 	//matrix
 	Matrix m;
 	m.load(filename);
@@ -110,14 +125,5 @@ int main(int argc, char *argv[]) {
 	//Run classifiers
 	train_and_test(m);
 
-	//stats
-	test_regression();
-	vector<double> test_mode;
-	test_mode.push_back(1.0);
-	test_mode.push_back(2.0);
-	test_mode.push_back(5.0);
-	test_mode.push_back(2.0);
-	test_mode.push_back(7.0);
-	cout << mode(test_mode) << endl;
 	return 0;
 }
