@@ -1,6 +1,9 @@
 #include <iostream>
-#include <cstdlib>
 using namespace std;
+#include <cstdlib>
+#include <cassert>
+#include <unistd.h>
+
 
 #include "stats.hpp"
 #include "tree_node.hpp"
@@ -9,7 +12,9 @@ using namespace std;
 #include "forest.hpp"
 #include "parallel_forest.hpp"
 
-int threads;
+int threads = 16;
+int n_trees = 1000;
+int n_features = -1;
 
 double test(Classifier * c, Matrix & m) {
 	//Analyze the results of the tree against training dataset
@@ -32,9 +37,15 @@ double test(Classifier * c, Matrix & m) {
 
 void train_and_test(Matrix & matrix) {
 	vector<Classifier*> classifiers;
+	//Other classifier commented out:
 	//classifiers.push_back(new TreeNode());
 	//classifiers.push_back(new Forest(1000, matrix.columns()-1));
-	classifiers.push_back(new ParallelForest(10, matrix.columns()-1, threads));
+
+	//use all features if negative
+	if(n_features <= 0) {
+		n_features = matrix.columns()-1;
+	}
+	classifiers.push_back(new ParallelForest(n_trees, n_features, threads));
 
 	for(int i = 0; i < classifiers.size(); i++) {
 		Classifier * classifier = classifiers[i];
@@ -61,8 +72,34 @@ void test_matrix(Matrix & m) {
 }
 
 int main(int argc, char *argv[]) {
-	string filename(argv[1]);
-	threads = atoi(argv[2]);
+	//Parse command line arguments
+	char * cvalue = NULL;
+	int c;
+	string filename;
+	while((c = getopt(argc, argv, "t:c:p:n:f:m:")) != -1) {
+		switch(c) {
+		case 't': //training file
+			filename = optarg;
+			break;
+		case 'c': //data to classify
+			break;
+		case 'p': //number of threads
+			threads = atoi(optarg);
+			break;
+		case 'n': //number of trees
+			n_trees = atoi(optarg);
+			assert(n_trees > 0);
+			break;
+		case 'f': //number of features
+			n_features = atoi(optarg);
+			assert(n_features > 0);
+			break;
+		case 'm': //minimum gain
+			break;
+		default:
+			exit(1);
+		}
+	}
 	if(threads <= 0) threads = 16;
 	cout << " threads " << threads << endl;
 	//matrix
