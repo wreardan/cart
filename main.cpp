@@ -68,7 +68,7 @@ double train_and_test(Matrix & train, Matrix & testing) {
 	cout << percent << "% correct" << endl;
 	//put classes in testing matrix
 	vector<double> class_doubles(classes.begin(), classes.end());
-	testing.append_column(class_doubles);
+	testing.append_column(class_doubles, "Class");
 
 	return percent;
 }
@@ -112,7 +112,10 @@ void folded_train_and_test(Matrix & input_matrix, int n_folds) {
 	vector<int> rows = range(result.rows());
 	vector<int> cols;
 	cols.push_back(result.columns()-1);
-	result.submatrix(rows, cols).save("data/class_id.txt");
+	cout << rows.size() << "\t" << cols.size() << endl;
+	cout << result.rows() << "\t" << result.columns() << endl;
+	Matrix sub = result.submatrix(rows, cols);
+	sub.save("data/class_id.txt");
 }
 
 void test_matrix(Matrix & m) {

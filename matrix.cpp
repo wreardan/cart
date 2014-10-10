@@ -161,8 +161,9 @@ Matrix Matrix::shuffled() {
 
 //Append a column to the right side of the Matrix
 //Mutable
-void Matrix::append_column(vector<double> & col) {
+void Matrix::append_column(vector<double> & col, string name) {
 	assert(col.size() == rows());
+	column_labels.push_back(name);
 	for(int i = 0; i < col.size(); i++) {
 		double value = col[i];
 		elements[i].push_back(value);
@@ -171,9 +172,13 @@ void Matrix::append_column(vector<double> & col) {
 
 //Add rows from other Matrix to this Matrix
 void Matrix::merge_rows(Matrix & other) {
-	assert(columns() == other.columns() || columns() == 0);
+	if(columns() == 0) {
+		column_labels = other.column_labels;
+	}
+	assert(columns() == other.columns() || rows() == 0);
 	for(int i = 0; i < other.rows(); i++) {
 		vector<double> & row = other.elements[i];
 		elements.push_back(row);
+		row_labels.push_back(other.row_labels[i]);
 	}
 }

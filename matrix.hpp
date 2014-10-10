@@ -21,7 +21,7 @@ public:
 	Matrix submatrix(vector<int> rows, vector<int> columns);
 	void split(int column_index, double value, Matrix & m1, Matrix & m2);
 	Matrix shuffled();
-	void append_column(vector<double> & col);
+	void append_column(vector<double> & col, string name="");
 	void merge_rows(Matrix & other);
 	//Bracket overloaded operator:
 	vector<double> & operator[](int i);
