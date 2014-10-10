@@ -19,6 +19,9 @@ class Matrix():
     def __len__(self):
         return len(self.elements)
 
+    def rows(self):
+        return len(self)
+
     def columns(self):
         """Return the number of columns in the matrix"""
         return len(self.elements[0])
@@ -130,7 +133,8 @@ class Matrix():
     def merge(self, other):
         """Merge another matrix with this Matrix,
         based on row_labels
-        Assumes use of row_labels in both matrices"""
+        Assumes use of row_labels in both matrices
+        Mutable"""
         # Append columns
         for label in other.column_labels:
             self.column_labels.append(label)
@@ -140,6 +144,28 @@ class Matrix():
             other_row = other.get_row(label)
             for element in other_row:
                 row.append(element)
+
+    def sorted(self, column_index):
+        """Returns this matrix sorted on a column.
+        Immutable"""
+        column = self.column(column_index)
+        indices = range(self.rows())
+        zipped = list(zip(column, indices))
+        zipped.sort()
+        rows = [x[1] for x in zipped]
+        cols = range(self.columns())
+        return self.submatrix(rows, cols)
+
+    def sorted_row_labels(self):
+        """Returns this matrix sorted on row labels.
+        Immutable"""
+        indices = range(self.rows())
+        zipped = list(zip(self.row_labels, indices))
+        zipped.sort()
+        rows = [x[1] for x in zipped]
+        cols = range(self.columns())
+        return self.submatrix(rows, cols)
+
 
 
 def test_matrix():
@@ -156,5 +182,22 @@ def test_matrix():
     print(m.transpose().elements)
     print(m.flatten())
 
+def test_sort():
+    # Test Sort on column
+    m = Matrix(3, 2, 0.0)
+    m[0][0] = 3.0
+    m[1][0] = 2.0
+    m[2][0] = 1.0
+    m[0][1] = 1.0
+    m[1][1] = 2.0
+    m[2][1] = 3.0
+    r = m.sorted(0)
+    assert(r[0][1] == 3.0)
+    m.row_labels = ['c', 'b', 'a']
+    s = m.sorted_row_labels()
+    assert(s[0][1] == 3.0)
+
+
 if __name__ == '__main__':
     test_matrix()
+    test_sort()
