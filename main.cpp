@@ -66,11 +66,15 @@ double train_and_test(Matrix & train, Matrix & testing) {
 	Classifier * classifier = &forest;
 	double percent = test(classifier, testing, classes);
 	cout << percent << "% correct" << endl;
-	//dump classes to file
+	//put classes in testing matrix
+	vector<double> class_doubles(classes.begin(), classes.end());
+	testing.append_column(class_doubles);
+
 	return percent;
 }
 
 void folded_train_and_test(Matrix & input_matrix, int n_folds) {
+	Matrix result;
 	Matrix matrix = input_matrix.shuffled();
 	int R = matrix.rows();
 	int N = R / n_folds;
@@ -99,8 +103,10 @@ void folded_train_and_test(Matrix & input_matrix, int n_folds) {
 		Matrix testing = matrix.submatrix(testing_rows, all_columns);
 		//Test
 		total_percent += train_and_test(training, testing);
+		//store results (classID is in testing)
+		result.merge_rows(testing);
 	}
-	double percent = total_percent * 100.0 / n_folds;
+	double percent = total_percent / n_folds;
 	cout << "Percent recovered: " << percent << "%\n";
 }
 

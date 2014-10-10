@@ -158,3 +158,22 @@ Matrix Matrix::shuffled() {
 	vector<int> column_indices = range(columns());
 	return submatrix(row_indices, column_indices);
 }
+
+//Append a column to the right side of the Matrix
+//Mutable
+void Matrix::append_column(vector<double> & col) {
+	assert(col.size() == rows());
+	for(int i = 0; i < col.size(); i++) {
+		double value = col[i];
+		elements[i].push_back(value);
+	}
+}
+
+//Add rows from other Matrix to this Matrix
+void Matrix::merge_rows(Matrix & other) {
+	assert(columns() == other.columns() || columns() == 0);
+	for(int i = 0; i < other.rows(); i++) {
+		vector<double> & row = other.elements[i];
+		elements.push_back(row);
+	}
+}
