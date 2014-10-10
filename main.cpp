@@ -108,6 +108,11 @@ void folded_train_and_test(Matrix & input_matrix, int n_folds) {
 	}
 	double percent = total_percent / n_folds;
 	cout << "Percent recovered: " << percent << "%\n";
+
+	vector<int> rows = range(result.rows());
+	vector<int> cols;
+	cols.push_back(result.columns()-1);
+	result.submatrix(rows, cols).save("data/class_id.txt");
 }
 
 void test_matrix(Matrix & m) {
