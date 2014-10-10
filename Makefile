@@ -1,8 +1,8 @@
 test: build
-	time ./randomForest -t ./data/H1hesc_allforward_features.txt -p 20 -n 500
+	time ./randomForest -t ./data/H1hesc_allforward_features.txt -p 20 -n 500 -f 7
 
 test2: build
-	time ./randomForest -t ./data/H1hesc_train.txt -c ./data/H1hesc_test.txt -p 4 -n 500
+	time ./randomForest -t ./data/H1hesc_train.txt -c ./data/H1hesc_test.txt -p 4 -n 500 -f 7
 
 build:
 	g++ -pthread main.cpp stats.cpp tree_node.cpp matrix.cpp forest.cpp parallel_forest.cpp pthread_pool.c -o randomForest

@@ -38,7 +38,7 @@ class Matrix():
             f.write(header)
             # Write elements
             for i, row in enumerate(self.elements):
-                string = self.row_labels[i]
+                string = self.row_labels[i] + '\t'
                 string += '\t'.join(map(str, row)) + '\n'
                 f.write(string)
 
