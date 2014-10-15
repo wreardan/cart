@@ -100,6 +100,9 @@ void folded_train_and_test(Matrix & input_matrix, int n_folds) {
 		Matrix training = matrix.submatrix(training_rows, all_columns);
 		//Get testing subset
 		vector<int> testing_rows = range(i*N, (i+1)*N);
+		if(i == n_folds-1) { //include extra elements
+			testing_rows = range(i*N, R);
+		}
 		Matrix testing = matrix.submatrix(testing_rows, all_columns);
 		//Test
 		total_percent += train_and_test(training, testing);
