@@ -178,7 +178,7 @@ int main(int argc, char *argv[]) {
 			assert(n_features > 0);
 			break;
 		case 'g': //minimum gain
-			MINIMUM_GAIN = atoi(optarg);
+			MINIMUM_GAIN = atod(optarg);
 			assert(MINIMUM_GAIN > 0.0);
 			break;
 
