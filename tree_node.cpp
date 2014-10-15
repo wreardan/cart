@@ -7,7 +7,7 @@
 #include <algorithm>
 using namespace std;
 
-static double MINIMUM_GAIN = 0.1;
+double MINIMUM_GAIN = 0.1;
 
 TreeNode::TreeNode() {
 	left = right = NULL;

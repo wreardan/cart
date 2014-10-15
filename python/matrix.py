@@ -27,8 +27,13 @@ class Matrix():
         return len(self.elements[0])
 
     def column(self, index):
-        """Get an array of column values at index"""
+        """Get an array of column values at index.  Immutable."""
         return [row[index] for row in self.elements]
+
+    def column_by_name(self, name):
+        """Get an array of column values from the column_label.  Immutable."""
+        index = self.column_labels.index(name)
+        return self.column(index)
 
     def save(self, filename):
         """Save matrix to tab-separated file"""
@@ -50,6 +55,7 @@ class Matrix():
         :param row_headers: true if first element in row is the label
         :param datatype: type to cast values to, i.e. int, float, etc.
         :return: None
+        Mutable
         """
         self.elements = []
         with open(filename) as f:
@@ -67,7 +73,7 @@ class Matrix():
                     self.elements.append(row)
 
     def flatten(self):
-        """flatten the matrix into a 1d array"""
+        """flatten the matrix into a 1d array.  Immutable."""
         return [element for row in self.elements for element in row]
 
     def dimensions(self):
@@ -76,10 +82,11 @@ class Matrix():
 
     def submatrix(self, rows, columns):
         """
-        return a submatrix (does not modify matrix). order DOES matter
+        return a submatrix. order DOES matter
         :param rows: list of rows to be included in sub-matrix
         :param columns: list of columns to be included in sub-matrix
         :return:
+        Immutable
         """
         s = Matrix(len(rows), len(columns))
         s.elements = [[self.elements[i][j] for j in columns] for i in rows]
@@ -90,7 +97,8 @@ class Matrix():
         return s
 
     def transpose(self):
-        """exchange rows and columns"""
+        """exchange rows and columns.
+        Immutable."""
         rows, cols = self.dimensions()
         result = Matrix(cols, rows)
         result.elements = [[self.elements[i][j] for i in range(rows)] for j in range(cols)]
@@ -100,7 +108,8 @@ class Matrix():
 
     def random_split(self):
         """randomly split the matrix elements into two matrices of
-        equal size"""
+        equal size.
+        Immutable"""
         num_rows = len(self)
         rows = list(range(len(self.elements)))
         all_cols = list(range(self.columns()))

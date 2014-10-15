@@ -151,7 +151,7 @@ int main(int argc, char *argv[]) {
 	int c;
 	string filename;
 	string test_filename;
-	while((c = getopt(argc, argv, "t:c:p:n:f:m:")) != -1) {
+	while((c = getopt(argc, argv, "t:c:p:n:f:g:")) != -1) {
 		switch(c) {
 
 		//Required arguments:
@@ -174,7 +174,9 @@ int main(int argc, char *argv[]) {
 			n_features = atoi(optarg);
 			assert(n_features > 0);
 			break;
-		case 'm': //minimum gain
+		case 'g': //minimum gain
+			MINIMUM_GAIN = atoi(optarg);
+			assert(MINIMUM_GAIN > 0.0);
 			break;
 
 		default:

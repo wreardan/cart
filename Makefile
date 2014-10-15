@@ -1,5 +1,5 @@
 test: build
-	time ./randomForest -t ./data/H1hesc_allforward_features.txt -p 20 -n 500
+	time ./randomForest -t ./data/H1hesc_allforward_features.txt -p 20 -n 500 -f 7 -g 0.01
 
 test2: build
 	time ./randomForest -t ./data/H1hesc_train.txt -c ./data/H1hesc_test.txt -p 4 -n 500

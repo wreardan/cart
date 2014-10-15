@@ -6,6 +6,8 @@
 #include <string>
 using std::string;
 
+extern double MINIMUM_GAIN;
+
 class TreeNode : public Classifier {
 private:
 	TreeNode * left;
