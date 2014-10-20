@@ -154,6 +154,16 @@ class Matrix():
             for element in other_row:
                 row.append(element)
 
+    def merge_vertical(self, other):
+        """Merge matrix with other vertically.
+        Mutable"""
+        # Add row_labels
+        for label in other.row_labels:
+            self.row_labels.append(label)
+        # Add rows
+        for row in other.elements:
+            self.elements.append(copy(row))
+
     def sorted(self, column_index):
         """Returns this matrix sorted on a column.
         Immutable"""

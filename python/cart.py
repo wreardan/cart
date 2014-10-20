@@ -74,20 +74,35 @@ class Forest():
     """A forest contains a collection of trees with partial
     feature sets.  These trees vote on a classification
     to determine the final class."""
-    def __init__(self, n_trees=100, n_features=10):
+    def __init__(self, n_trees=100, n_features=10, n_samples=200):
         self.n_trees = n_trees
         self.n_features = n_features
+        assert(n_samples % 2 == 0)
+        self.n_samples = n_samples
         self.trees = []
         for i in range(n_trees):
             tree = TreeNode()
             self.trees.append(tree)
 
     def train(self, matrix):
-        all_columns = list(range(matrix.columns()-1))
+        all_columns = list(range(matrix.columns()))
+        data_columns = all_columns[:-1]
+        zero, one = matrix.split(-1, 1)
+        all_rows_zero = list(range(len(zero)))
+        all_rows_one = list(range(len(one)))
         for tree in self.trees:
-            shuffle(all_columns)
-            columns = all_columns[0:self.n_features]
-            tree.train(matrix, columns)
+            columns = copy(data_columns)
+            shuffle(columns)
+            columns = columns[0:self.n_features]
+            shuffle(all_rows_zero)
+            zero_rows = all_rows_zero[0:self.n_samples/2]
+            subzero = zero.submatrix(zero_rows, all_columns)
+            shuffle(all_rows_one)
+            one_rows = all_rows_one[0:self.n_samples/2]
+            subone = one.submatrix(one_rows, all_columns)
+            subzero.merge_vertical(subone)
+            #print subzero.column(-1)
+            tree.train(subzero, columns)
 
     def classify(self, row):
         votes = []
@@ -146,6 +161,33 @@ def evaluate(matrix, classifier):
     return right, wrong
 
 
+def cross_fold_validation(matrix, classifier, arguments=(), n_folds=10):
+    R = len(matrix)
+    N = R / n_folds
+    all_columns = range(0, matrix.columns())
+    total_percent = 0.0
+    for fold in range(n_folds):
+        cls = classifier(*arguments)
+        if fold == 0: # Beginning Fold
+            training_rows = range(N, R)
+        elif fold < n_folds-1: # Middle Folds
+            training_rows = range(0, fold*N) + range((fold+1)*N,R)
+        else: # End Fold
+            training_rows = range(0, R-N)
+        testing_rows = range(fold*N, (fold+1)*N)
+        if fold == n_folds-1:
+            testing_rows = range(fold*N, R)
+        testing = matrix.submatrix(testing_rows, all_columns)
+        training = matrix.submatrix(training_rows, all_columns)
+        cls.train(training)
+        right, wrong = evaluate(testing, cls)
+        percent = right * 100.0 / len(testing)
+        print "fold %d: %f%%" % (fold, percent)
+        total_percent += percent
+    total_percent /= n_folds
+    return total_percent
+
+
 def main():
     if len(sys.argv) < 2:
         print('usage: python cart.py training_file')
@@ -156,19 +198,22 @@ def main():
     #test = Matrix()
     #test.load(sys.argv[2])
     # Train a single regression tree
-    root = TreeNode()
-    cols = list(range(train.columns()-1))
-    root.train(train, cols)
+    # root = TreeNode()
+    # cols = list(range(train.columns()-1))
+    # root.train(train, cols)
     # Evaluate results against original training set
-    right, wrong = evaluate(train, root)
-    percent = right * 100.0 / len(train)
-    print('training set recovered: %f%%' % percent)
+    # right, wrong = evaluate(train, root)
+    # percent = right * 100.0 / len(train)
+    # print('training set recovered: %f%%' % percent)
     # Evaluate Random Forest Method
-    forest = ParallelForest(1000, train.columns()-1, 16)
-    forest.train(train)
-    right, wrong = evaluate(train, forest)
-    percent = right * 100.0 / len(train)
-    print('training set recovered: %f%%' % percent)
+    # forest = ParallelForest(1, 7, 1)
+    # forest.train(train)
+    # right, wrong = evaluate(train, forest)
+    # percent = right * 100.0 / len(train)
+    # print('training set recovered: %f%%' % percent)
+    args = (1, 7, 500)
+    percent = cross_fold_validation(train, Forest, args)
+    print "total percent: %f%%" % percent
 
 
 if __name__ == '__main__':
