@@ -1,13 +1,19 @@
 import sys
 from copy import copy
-from random import shuffle
+from random import shuffle, sample, choice
 from multiprocessing.pool import Pool
+from itertools import chain
 
 from matrix import Matrix
-from stats import mean, mode, regression_score
+from stats import mean, regression_score, list_to_discrete, add_distributions,\
+    max_index, counts_to_probabilities
 
 
 MINIMUM_GAIN = 0.1
+
+
+def sample_with_replacement(l, k):
+    return [choice(l) for _ in range(k)]
 
 
 class TreeNode():
@@ -16,14 +22,14 @@ class TreeNode():
         self.left = self.right = None
         self.column = None
         self.value = None
-        self.classification = None
+        self.probabilities = None
 
     def train(self, matrix, columns):
         """Train the regression tree on a matrix of data using features
         in columns"""
         assert(len(matrix) > 0)
         if len(columns) <= 0:
-            self.classification = mode(matrix.column(-1))
+            self.probabilities = list_to_discrete(matrix.column(-1))
             return
         # Decide which column to split on
         min_error = 1000000000
@@ -39,14 +45,14 @@ class TreeNode():
         value = mean(matrix.column(min_index))
         left, right = matrix.split(min_index, value)
         if len(left) <= 0 or len(right) <= 0:
-            self.classification = mode(matrix.column(-1))
+            self.probabilities = list_to_discrete(matrix.column(-1))
             return
         left_error = regression_score(left, min_index)
         right_error = regression_score(right, min_index)
         gain = error-(left_error+right_error)
         # Stop recursing if below threshhold
         if gain < MINIMUM_GAIN:
-            self.classification = mode(matrix.column(-1))
+            self.probabilities = list_to_discrete(matrix.column(-1))
             return
         #print(gain, min_index, min_error)
         # Set self values
@@ -62,8 +68,8 @@ class TreeNode():
 
     def classify(self, row):
         """Classify a vector of data using this regression tree"""
-        if self.classification is not None:
-            return self.classification
+        if self.probabilities is not None:
+            return self.probabilities
         if row[self.column] < self.value:
             return self.left.classify(row)
         else:
@@ -74,15 +80,40 @@ class Forest():
     """A forest contains a collection of trees with partial
     feature sets.  These trees vote on a classification
     to determine the final class."""
-    def __init__(self, n_trees=100, n_features=10, n_samples=200):
+    def __init__(self, n_trees=100, n_features=10):
         self.n_trees = n_trees
         self.n_features = n_features
-        assert(n_samples % 2 == 0)
-        self.n_samples = n_samples
         self.trees = []
         for i in range(n_trees):
             tree = TreeNode()
             self.trees.append(tree)
+
+    def train(self, matrix):
+        all_columns = list(range(matrix.columns()))
+        data_columns = all_columns[:-1]
+        for tree in self.trees:
+            columns = copy(data_columns)
+            shuffle(columns)
+            columns = columns[0:self.n_features]
+            tree.train(matrix, columns)
+
+    def classify(self, row):
+        distributions = []
+        for tree in self.trees:
+            dist = tree.classify(row)
+            #dist = counts_to_probabilities(dist)
+            distributions.append(dist)
+        total_counts = add_distributions(distributions)
+        #print(total_counts, row[-1])
+        p = float(total_counts[0])/sum(total_counts)
+        return max_index(total_counts), p
+
+
+class BalancedRandomForest(Forest):
+    def __init__(self, n_trees=100, n_features=10, n_samples=200):
+        super(BalancedRandomForest, self).__init__(n_trees, n_features)
+        assert(n_samples % 2 == 0)
+        self.n_samples = n_samples
 
     def train(self, matrix):
         all_columns = list(range(matrix.columns()))
@@ -101,15 +132,8 @@ class Forest():
             one_rows = all_rows_one[0:self.n_samples/2]
             subone = one.submatrix(one_rows, all_columns)
             subzero.merge_vertical(subone)
-            #print subzero.column(-1)
+            print subzero.column(-1)
             tree.train(subzero, columns)
-
-    def classify(self, row):
-        votes = []
-        for tree in self.trees:
-            vote = tree.classify(row)
-            votes.append(vote)
-        return mode(votes)
 
 
 def parallel_train(state):
@@ -151,14 +175,18 @@ class ParallelForest(Forest):
 
 def evaluate(matrix, classifier):
     right = wrong = 0
+    p_values = []
+    classes = []
     for i in range(len(matrix)):
-        row_class = classifier.classify(matrix[i])
+        row_class, p = classifier.classify(matrix[i])
+        p_values.append(p)
+        classes.append(row_class)
         expected_class = matrix[i][-1]
         if row_class == expected_class:
             right += 1
         else:
             wrong += 1
-    return right, wrong
+    return right, wrong, p_values, classes
 
 
 def cross_fold_validation(matrix, classifier, arguments=(), n_folds=10):
@@ -166,54 +194,54 @@ def cross_fold_validation(matrix, classifier, arguments=(), n_folds=10):
     N = R / n_folds
     all_columns = range(0, matrix.columns())
     total_percent = 0.0
+    all_p_values = []
+    all_classes = []
     for fold in range(n_folds):
         cls = classifier(*arguments)
-        if fold == 0: # Beginning Fold
+        if fold == 0:  # Beginning Fold
             training_rows = range(N, R)
-        elif fold < n_folds-1: # Middle Folds
-            training_rows = range(0, fold*N) + range((fold+1)*N,R)
-        else: # End Fold
+        elif fold < n_folds-1:  # Middle Folds
+            training_rows = chain(range(0, fold*N), range((fold+1)*N, R))
+        else:  # End Fold
             training_rows = range(0, R-N)
         testing_rows = range(fold*N, (fold+1)*N)
         if fold == n_folds-1:
             testing_rows = range(fold*N, R)
-        testing = matrix.submatrix(testing_rows, all_columns)
-        training = matrix.submatrix(training_rows, all_columns)
+        #print(len(matrix), matrix.columns())
+        testing = matrix.submatrix(list(testing_rows), all_columns)
+        training = matrix.submatrix(list(training_rows), all_columns)
         cls.train(training)
-        right, wrong = evaluate(testing, cls)
+        right, wrong, p_values, classes = evaluate(testing, cls)
+        all_p_values.extend(p_values)
+        all_classes.extend(classes)
         percent = right * 100.0 / len(testing)
-        print "fold %d: %f%%" % (fold, percent)
+        print("fold %d: %f%%" % (fold, percent))
         total_percent += percent
     total_percent /= n_folds
-    return total_percent
+    return total_percent, all_p_values, all_classes
 
 
 def main():
     if len(sys.argv) < 2:
         print('usage: python cart.py training_file')
         exit(1)
-    # Load Matrices0
+    # Load Matrices
     train = Matrix()
     train.load(sys.argv[1])
-    #test = Matrix()
-    #test.load(sys.argv[2])
-    # Train a single regression tree
-    # root = TreeNode()
-    # cols = list(range(train.columns()-1))
-    # root.train(train, cols)
-    # Evaluate results against original training set
-    # right, wrong = evaluate(train, root)
-    # percent = right * 100.0 / len(train)
-    # print('training set recovered: %f%%' % percent)
-    # Evaluate Random Forest Method
-    # forest = ParallelForest(1, 7, 1)
-    # forest.train(train)
-    # right, wrong = evaluate(train, forest)
-    # percent = right * 100.0 / len(train)
-    # print('training set recovered: %f%%' % percent)
-    args = (1, 7, 500)
-    percent = cross_fold_validation(train, Forest, args)
-    print "total percent: %f%%" % percent
+    matrix = train.shuffled()  # Shuffle Matrix so classes are spread out
+    args = (500, 15)  # num_trees, num_features, num_samples
+    percent, p_values, all_classes = cross_fold_validation(matrix, Forest, args)
+    # fargs = (500, 15, 4)
+    # percent, p_values, all_classes = cross_fold_validation(matrix, ParallelForest, fargs)
+    print("total percent: %f%%" % percent)
+
+    # Write soft labels
+    actual_classes = matrix.column(-1)
+    with open('./data/p_values.txt', 'w') as f:
+        f.write('Gene Name\tP Value\tWes Class\tActual Class\n')
+        for name, p, class_id, actual in zip(matrix.row_labels, p_values, all_classes, actual_classes):
+            f.write('%s\t%f\t%f\t%f\n' % (name, p, class_id, actual))
+
 
 
 if __name__ == '__main__':

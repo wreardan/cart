@@ -135,3 +135,31 @@ def chi2_score2(matrix, column):
             y = matrix.column(j)
             score += chi2(x, y)
     return score / ((matrix.columns() - 1) ** 2)
+
+
+def is_sequential(array, start=0):
+    assert(len(array) > 0)
+    prev = start - 1
+    for element in array:
+        if element != prev+1:
+            return False
+        prev = element
+    return True
+
+
+def list_to_discrete(array, num_ids=2):
+    """Returns counts of unique elements for an array.
+    A little slow: O(2N) instead of O(N) possible"""
+    values = list(range(num_ids))
+    return [array.count(value) for value in values]
+
+
+def counts_to_probabilities(dist):
+    n = sum(dist)
+    return [value/n for value in dist]
+
+
+def add_distributions(distributions):
+    return [sum(sublist) for sublist in zip(*distributions)]
+
+

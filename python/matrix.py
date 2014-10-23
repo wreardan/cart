@@ -1,5 +1,5 @@
 from copy import copy
-from random import shuffle
+from random import shuffle, randint
 
 __author__ = 'wesley'
 
@@ -85,7 +85,7 @@ class Matrix():
         return a submatrix. order DOES matter
         :param rows: list of rows to be included in sub-matrix
         :param columns: list of columns to be included in sub-matrix
-        :return:
+        :return: a new matrix with specified rows, cols
         Immutable
         """
         s = Matrix(len(rows), len(columns))
@@ -123,7 +123,8 @@ class Matrix():
 
     def split(self, column, value):
         """split the matrices into two submatrices based on
-        a column's value"""
+        a column's value.
+        Immutable"""
         left = Matrix()
         right = Matrix()
         for row in self.elements:
@@ -145,7 +146,7 @@ class Matrix():
         Assumes use of row_labels in both matrices
         Mutable"""
         # Append columns
-        for label in other.column_labels:
+        for label in other.column_labels[1:]:
             self.column_labels.append(label)
         # Add elements
         for label in other.row_labels:
@@ -185,6 +186,13 @@ class Matrix():
         cols = range(self.columns())
         return self.submatrix(rows, cols)
 
+    def shuffled(self):
+        """Returns a row-shuffled version of this matrix.
+        Immutable"""
+        rows = range(self.rows())
+        shuffle(rows)
+        cols = range(self.columns())
+        return self.submatrix(rows, cols)
 
 
 def test_matrix():
@@ -200,6 +208,7 @@ def test_matrix():
     print(s.elements)
     print(m.transpose().elements)
     print(m.flatten())
+
 
 def test_sort():
     # Test Sort on column
