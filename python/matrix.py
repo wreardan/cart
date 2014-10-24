@@ -194,6 +194,16 @@ class Matrix():
         cols = range(self.columns())
         return self.submatrix(rows, cols)
 
+    def random_subset(self, n):
+        """returns a random subset of rows in this matrix.
+        Immutable.
+        TODO: Combine with shuffled() Deduplicate"""
+        rows = range(self.rows())
+        shuffle(rows)
+        rows = rows[:n]
+        cols = range(self.columns())
+        return self.submatrix(rows, cols)
+
 
 def test_matrix():
     m = Matrix(4, 3, 0.0)

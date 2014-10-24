@@ -80,22 +80,23 @@ class Forest():
     """A forest contains a collection of trees with partial
     feature sets.  These trees vote on a classification
     to determine the final class."""
-    def __init__(self, n_trees=100, n_features=10):
+    def __init__(self, n_trees=100, n_features=10, p_samples=0.1):
         self.n_trees = n_trees
         self.n_features = n_features
+        self.p_samples = p_samples
         self.trees = []
         for i in range(n_trees):
             tree = TreeNode()
             self.trees.append(tree)
 
     def train(self, matrix):
-        all_columns = list(range(matrix.columns()))
-        data_columns = all_columns[:-1]
+        all_columns = list(range(matrix.columns()-1))
+        n_samples = int(self.p_samples * len(matrix))
         for tree in self.trees:
-            columns = copy(data_columns)
-            shuffle(columns)
-            columns = columns[0:self.n_features]
-            tree.train(matrix, columns)
+            shuffle(all_columns)
+            columns = all_columns[0:self.n_features]
+            subset = matrix.random_subset(n_samples)
+            tree.train(subset, columns)
 
     def classify(self, row):
         distributions = []
@@ -105,17 +106,13 @@ class Forest():
             distributions.append(dist)
         total_counts = add_distributions(distributions)
         #print(total_counts, row[-1])
-        p = float(total_counts[0])/sum(total_counts)
+        p = float(total_counts[1])/sum(total_counts)
         return max_index(total_counts), p
 
 
 class BalancedRandomForest(Forest):
-    def __init__(self, n_trees=100, n_features=10, n_samples=200):
-        super(BalancedRandomForest, self).__init__(n_trees, n_features)
-        assert(n_samples % 2 == 0)
-        self.n_samples = n_samples
-
     def train(self, matrix):
+        n_samples = int(self.p_samples * len(matrix))
         all_columns = list(range(matrix.columns()))
         data_columns = all_columns[:-1]
         zero, one = matrix.split(-1, 1)
@@ -126,13 +123,13 @@ class BalancedRandomForest(Forest):
             shuffle(columns)
             columns = columns[0:self.n_features]
             shuffle(all_rows_zero)
-            zero_rows = all_rows_zero[0:self.n_samples/2]
+            zero_rows = all_rows_zero[0:n_samples/2]
             subzero = zero.submatrix(zero_rows, all_columns)
             shuffle(all_rows_one)
-            one_rows = all_rows_one[0:self.n_samples/2]
+            one_rows = all_rows_one[0:n_samples/2]
             subone = one.submatrix(one_rows, all_columns)
             subzero.merge_vertical(subone)
-            print subzero.column(-1)
+            #print(subzero.column(-1))
             tree.train(subzero, columns)
 
 
@@ -140,20 +137,21 @@ def parallel_train(state):
     """function to train trees in another process
     state is (matrix, columns) because we cannot use
     a starmap in Python < 3.3 """
-    matrix, columns = state
+    matrix, columns, n_samples = state
     #m = Matrix()
     #m.load(matrix_filename)
-    m = matrix
+    m = matrix.random_subset(n_samples)
     root = TreeNode()
     root.train(m, columns)
     return root
 
 
-def column_set(columns, number):
-    """returns a random subset of columns of size number.
-    Note: modifies columns"""
-    shuffle(columns)
-    return columns[:number]
+def select_subset(array, number):
+    """returns a random subset of array of size number.
+    Immutable."""
+    col_set = copy(array)
+    shuffle(col_set)
+    return col_set[:number]
 
 
 class ParallelForest(Forest):
@@ -161,15 +159,17 @@ class ParallelForest(Forest):
     It starts a Pool of processes, then uses map to create a
     set of trees.  Classification is still done in serial:
     inherits Forest's classify method."""
-    def __init__(self, n_trees=100, n_features=10, n_processes=2):
+    def __init__(self, n_trees=100, n_features=10, p_samples=0.1, n_processes=2):
         self.n_trees = n_trees
         self.n_features = n_features
+        self.p_samples = p_samples
         self.pool = Pool(n_processes)
         self.trees = []
 
     def train(self, matrix):
         all_columns = list(range(matrix.columns()-1))
-        star = [(matrix, column_set(all_columns, self.n_features)) for _ in range(self.n_trees)]
+        n_samples = int(self.p_samples * len(matrix))
+        star = [(matrix, select_subset(all_columns, self.n_features), n_samples) for _ in range(self.n_trees)]
         self.trees = self.pool.map(parallel_train, star)
 
 
@@ -229,10 +229,12 @@ def main():
     train = Matrix()
     train.load(sys.argv[1])
     matrix = train.shuffled()  # Shuffle Matrix so classes are spread out
-    args = (500, 15)  # num_trees, num_features, num_samples
-    percent, p_values, all_classes = cross_fold_validation(matrix, Forest, args)
-    # fargs = (500, 15, 4)
+    # args = (500, 7, 0.1)  # num_trees, num_features, num_samples
+    # percent, p_values, all_classes = cross_fold_validation(matrix, Forest, args)
+    # fargs = (500, 7, 0.1, 4)
     # percent, p_values, all_classes = cross_fold_validation(matrix, ParallelForest, fargs)
+    args = (500, 7, 0.1)
+    percent, p_values, all_classes = cross_fold_validation(matrix, BalancedRandomForest, args)
     print("total percent: %f%%" % percent)
 
     # Write soft labels
