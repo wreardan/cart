@@ -134,11 +134,36 @@ class Matrix():
                 right.elements.append(copy(row))
         return left, right
 
+    def extract(self, column, value):
+        """return submatrix of all rows where column=value"""
+        row_indices = []
+        for i, row in enumerate(self.elements):
+            if row[column] == value:
+                row_indices.append(i)
+        all_columns = list(range(self.columns()))
+        return self.submatrix(row_indices, all_columns)
+
+    def discrete_split(self, column):
+        """Split the matrix into multiple matrices based on
+        a column's value. Assumes that the column is discrete."""
+        matrices = []
+        classes = set(self.column(column))
+        for cls in classes:
+            matrix = self.extract(column, cls)
+            matrices.append(matrix)
+        return matrices
+
     def get_row(self, label):
         """Get a row based on its label"""
         row_index = self.row_labels.index(label)
         assert(row_index != -1)
         return self.elements[row_index]
+
+    def copy(self):
+        """returns a copy of this matrix"""
+        all_rows = list(range(self.rows()))
+        all_columns = list(range(self.columns()))
+        return self.submatrix(all_rows, all_columns)
 
     def merge(self, other):
         """Merge another matrix with this Matrix,

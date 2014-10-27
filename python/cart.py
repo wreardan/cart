@@ -115,22 +115,23 @@ class BalancedRandomForest(Forest):
         n_samples = int(self.p_samples * len(matrix))
         all_columns = list(range(matrix.columns()))
         data_columns = all_columns[:-1]
-        zero, one = matrix.split(-1, 1)
-        all_rows_zero = list(range(len(zero)))
-        all_rows_one = list(range(len(one)))
+        matrices = matrix.discrete_split(-1)
+        assert(len(matrices) > 1)
         for tree in self.trees:
+            # Select subset of features
             columns = copy(data_columns)
             shuffle(columns)
             columns = columns[0:self.n_features]
             shuffle(all_rows_zero)
-            zero_rows = all_rows_zero[0:n_samples/2]
-            subzero = zero.submatrix(zero_rows, all_columns)
-            shuffle(all_rows_one)
-            one_rows = all_rows_one[0:n_samples/2]
-            subone = one.submatrix(one_rows, all_columns)
-            subzero.merge_vertical(subone)
+            # Sample with or without replacement from classes
+            training_set = Matrix()
+            for m in matrices:
+                row_indices = list(range(len(m)))
+                shuffle(row_indices)
+                row_indices = row_indices[0:n_samples/2]
+                training_set.merge_vertical(m.submatrix(row_indices, all_columns))
             #print(subzero.column(-1))
-            tree.train(subzero, columns)
+            tree.train(training_set, columns)
 
 
 def parallel_train(state):
