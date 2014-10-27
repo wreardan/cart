@@ -122,7 +122,6 @@ class BalancedRandomForest(Forest):
             columns = copy(data_columns)
             shuffle(columns)
             columns = columns[0:self.n_features]
-            shuffle(all_rows_zero)
             # Sample with or without replacement from classes
             training_set = Matrix()
             for m in matrices:
@@ -229,6 +228,7 @@ def main():
     # Load Matrices
     train = Matrix()
     train.load(sys.argv[1])
+    #train.validate()
     matrix = train.shuffled()  # Shuffle Matrix so classes are spread out
     # args = (500, 7, 0.1)  # num_trees, num_features, num_samples
     # percent, p_values, all_classes = cross_fold_validation(matrix, Forest, args)

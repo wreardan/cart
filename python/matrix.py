@@ -93,8 +93,14 @@ class Matrix():
         if len(self.row_labels) > 0:
             s.row_labels = [self.row_labels[i] for i in rows]
         if len(self.column_labels) > 0:
-            s.column_labels = [self.column_labels[j] for j in columns]
+            s.column_labels = [self.column_labels[0]] + [self.column_labels[j] for j in columns]
         return s
+
+    def copy(self):
+        """Returns a copy of this Matrix"""
+        rows = range(self.rows())
+        cols = range(self.columns())
+        return self.submatrix(rows,cols)
 
     def transpose(self):
         """exchange rows and columns.
@@ -154,7 +160,8 @@ class Matrix():
         return matrices
 
     def get_row(self, label):
-        """Get a row based on its label"""
+        """Get a row based on its label
+        TODO: detect duplicates"""
         row_index = self.row_labels.index(label)
         assert(row_index != -1)
         return self.elements[row_index]
@@ -169,6 +176,7 @@ class Matrix():
         """Merge another matrix with this Matrix,
         based on row_labels
         Assumes use of row_labels in both matrices
+        Assumes no duplicate row_labels
         Mutable"""
         # Append columns
         for label in other.column_labels[1:]:
@@ -179,6 +187,16 @@ class Matrix():
             other_row = other.get_row(label)
             for element in other_row:
                 row.append(element)
+
+    def simple_merge(self, other):
+        """Simple horizontal immutable merge of two matrices"""
+        assert(len(self) == len(other))
+        s = self.copy()
+        for label in other.column_labels[1:]:
+            s.column_labels.append(label)
+        for i,row in enumerate(s):
+            row.extend(other[i])
+        return s
 
     def merge_vertical(self, other):
         """Merge matrix with other vertically.
@@ -214,9 +232,9 @@ class Matrix():
     def shuffled(self):
         """Returns a row-shuffled version of this matrix.
         Immutable"""
-        rows = range(self.rows())
+        rows = list(range(self.rows()))
         shuffle(rows)
-        cols = range(self.columns())
+        cols = list(range(self.columns()))
         return self.submatrix(rows, cols)
 
     def random_subset(self, n):
@@ -228,6 +246,26 @@ class Matrix():
         rows = rows[:n]
         cols = range(self.columns())
         return self.submatrix(rows, cols)
+
+    def validate(self, duplicates_allowed=False):
+        """validate the matrix: make sure it is equal
+        in dimensions"""
+        # Validate number of Columns in each row against
+        # Column Labels
+        num_cols = len(self.column_labels)-1
+        for i,row in enumerate(self.elements):
+            if len(row) != num_cols:
+                raise Exception('Invalid number of columns in row %d' % i)
+        # Validate number of rows against row_labels
+        if len(self.elements) != len(self.row_labels):
+            raise Exception('number of row_labels does not match number of rows')
+        # Check for duplicates
+        if not duplicates_allowed:
+            if len(self.row_labels) != len(set(self.row_labels)):
+                raise Exception('Duplicate rows detected')
+            if len(self.column_labels) != len(set(self.column_labels)):
+                raise Exception('Duplicate columns detected')
+        # Otherwise, validation passed
 
 
 def test_matrix():
