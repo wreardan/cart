@@ -12,3 +12,5 @@ void basic_linear_regression(const vector<double> & x, const vector<double> & y,
 double sum_of_squares(const vector<double> & x, const vector<double> & y, double m, double b);
 void test_regression();
 
+template<typename T> void sample(vector<T> sampling_list, int n, vector<T> & result_list);
+template<typename T> void sample_with_replacement(vector<T> sampling_list, int n, vector<T> & result_list);

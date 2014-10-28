@@ -108,3 +108,31 @@ void test_regression() {
 	cout << "y = " << m << "*x + " << b << endl;
 }
 
+/*
+Sample from a list without replacement
+puts the result in results_list
+*/
+template<typename T>
+void sample(vector<T> sampling_list, int n, vector<T> & result_list) {
+	random_shuffle(sampling_list.begin(), sampling_list.end());
+	assert(n < sampling_list.size());
+	result_list.empty();
+	for(int i = 0; i < n; i++) {
+		result_list.push_back(sampling_list[i]);
+	}
+}
+
+
+/*
+Sample from a list with replacement
+puts the result in results_list
+*/
+template<typename T>
+void sample_with_replacement(vector<T> sampling_list, int n, vector<T> & result_list) {
+	result_list.empty();
+	int size = sampling_list.size();
+	for(int i = 0; i < n; i++) {
+		int index = rand() % size;
+		result_list.push_back(sampling_list[index]);
+	}
+}

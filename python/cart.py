@@ -24,12 +24,12 @@ class TreeNode():
         self.value = None
         self.probabilities = None
 
-    def train(self, matrix, columns):
+    def train(self, matrix, columns, num_classes=2):
         """Train the regression tree on a matrix of data using features
         in columns"""
         assert(len(matrix) > 0)
         if len(columns) <= 0:
-            self.probabilities = list_to_discrete(matrix.column(-1))
+            self.probabilities = list_to_discrete(matrix.column(-1), num_classes)
             return
         # Decide which column to split on
         min_error = 1000000000
@@ -45,14 +45,14 @@ class TreeNode():
         value = mean(matrix.column(min_index))
         left, right = matrix.split(min_index, value)
         if len(left) <= 0 or len(right) <= 0:
-            self.probabilities = list_to_discrete(matrix.column(-1))
+            self.probabilities = list_to_discrete(matrix.column(-1), num_classes)
             return
         left_error = regression_score(left, min_index)
         right_error = regression_score(right, min_index)
         gain = error-(left_error+right_error)
         # Stop recursing if below threshhold
         if gain < MINIMUM_GAIN:
-            self.probabilities = list_to_discrete(matrix.column(-1))
+            self.probabilities = list_to_discrete(matrix.column(-1), num_classes)
             return
         #print(gain, min_index, min_error)
         # Set self values
@@ -92,11 +92,12 @@ class Forest():
     def train(self, matrix):
         all_columns = list(range(matrix.columns()-1))
         n_samples = int(self.p_samples * len(matrix))
+        n_classes = len(set(matrix.column(-1)))
         for tree in self.trees:
             shuffle(all_columns)
             columns = all_columns[0:self.n_features]
             subset = matrix.random_subset(n_samples)
-            tree.train(subset, columns)
+            tree.train(subset, columns, n_classes)
 
     def classify(self, row):
         distributions = []
@@ -113,6 +114,7 @@ class Forest():
 class BalancedRandomForest(Forest):
     def train(self, matrix):
         n_samples = int(self.p_samples * len(matrix))
+        n_classes = len(set(matrix.column(-1)))
         all_columns = list(range(matrix.columns()))
         data_columns = all_columns[:-1]
         matrices = matrix.discrete_split(-1)
@@ -130,7 +132,7 @@ class BalancedRandomForest(Forest):
                 row_indices = row_indices[0:n_samples/2]
                 training_set.merge_vertical(m.submatrix(row_indices, all_columns))
             #print(subzero.column(-1))
-            tree.train(training_set, columns)
+            tree.train(training_set, columns, n_classes)
 
 
 def parallel_train(state):

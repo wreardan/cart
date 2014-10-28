@@ -38,8 +38,7 @@ void ParallelForest::train(Matrix & m) {
 	vector<int> all_columns = range(m.columns()-1);
 	for(int i = 0; i < trees.size(); i++) {
 		TreeNode & tree = trees[i];
-		random_shuffle(all_columns.begin(), all_columns.end());
-		all_subsets[i] = slice(all_columns, 0, n_features);
+		sample(all_columns, n_features, all_subsets[i]);
 
 		//create work
 		struct Work * work = new struct Work;
