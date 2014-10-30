@@ -142,7 +142,7 @@ def parallel_train(state):
     matrix, columns, n_samples = state
     #m = Matrix()
     #m.load(matrix_filename)
-    m = matrix.random_subset(n_samples)
+    m = matrix.class_subset(-1, n_samples)
     root = TreeNode()
     root.train(m, columns)
     return root
@@ -232,12 +232,19 @@ def main():
     train.load(sys.argv[1])
     #train.validate()
     matrix = train.shuffled()  # Shuffle Matrix so classes are spread out
+
+    # Regular Random Forest algorithm:
     # args = (500, 7, 0.1)  # num_trees, num_features, num_samples
     # percent, p_values, all_classes = cross_fold_validation(matrix, Forest, args)
+
+    # Parallel Forest Classifier:
     # fargs = (500, 7, 0.1, 4)
     # percent, p_values, all_classes = cross_fold_validation(matrix, ParallelForest, fargs)
+
+    # Balanced Random Forest
     args = (500, 7, 0.1)
     percent, p_values, all_classes = cross_fold_validation(matrix, BalancedRandomForest, args)
+
     print("total percent: %f%%" % percent)
 
     # Write soft labels

@@ -159,6 +159,18 @@ class Matrix():
             matrices.append(matrix)
         return matrices
 
+    def class_subset(self, column, n_samples_per_subset):
+        """returns a discrete-based subset for used in a
+        balanced algorithm"""
+        matrices = self.discrete_split(column)
+        assert(len(matrices) > 1)
+        all_cols = range(self.columns())
+        result = Matrix()
+        for m in matrices:
+            sm = m.random_subset(n_samples_per_subset)
+            result.merge_vertical(sm)
+        return result
+
     def get_row(self, label):
         """Get a row based on its label
         TODO: detect duplicates"""
