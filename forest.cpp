@@ -36,12 +36,11 @@ void Forest::train(Matrix & m) {
 }
 
 int Forest::classify(vector<double> & row) {
-	vector<double> votes;
+	vector<int> all_class_counts(2, 0);
 	for(int i = 0; i < n_trees; i++) {
 		TreeNode & tree = trees[i];
-		double vote = tree.classify(row);
-		votes.push_back(vote);
+		vector<int> class_counts = tree.classify(row);
+		add_counts(all_class_counts, class_counts);
 	}
 	return (int)mode(votes);
 }
-

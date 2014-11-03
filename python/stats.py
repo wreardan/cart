@@ -83,7 +83,7 @@ def regression_score(matrix, column):
     y = matrix.column(-1)
     m, b = basic_linear_regression(x, y)
     error = sum_of_squares(x, y, m, b)
-    return error
+    return error, m, b
 
 
 def test_regression():
@@ -156,10 +156,26 @@ def list_to_discrete(array, num_ids=2):
 
 def counts_to_probabilities(dist):
     n = sum(dist)
-    return [value/n for value in dist]
+    return [float(value)/n for value in dist]
 
 
-def add_distributions(distributions):
+def add_counts(distributions):
     return [sum(sublist) for sublist in zip(*distributions)]
 
 
+def merge_distributions(distributions):
+    n = len(distributions)
+    return [sum(sublist)/n for sublist in zip(*distributions)]
+
+
+def normalized(p_values, lower=0.0, upper=1.0):
+    assert(len(p_values) > 0)
+    min_val = min(p_values)
+    max_val = max(p_values)
+    val_range = float(max_val - min_val)
+    return [upper * (p-min_val)/val_range for p in p_values]
+
+
+def dot(list1, list2):
+    assert(len(list1) == len(list2))
+    return sum([a*b for a,b in zip(list1,list2)])

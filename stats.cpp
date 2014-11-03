@@ -108,31 +108,31 @@ void test_regression() {
 	cout << "y = " << m << "*x + " << b << endl;
 }
 
+
+
 /*
-Sample from a list without replacement
-puts the result in results_list
+Convert a list of numbers into a class distribution
 */
-template<typename T>
-void sample(vector<T> sampling_list, int n, vector<T> & result_list) {
-	random_shuffle(sampling_list.begin(), sampling_list.end());
-	assert(n < sampling_list.size());
-	result_list.empty();
-	for(int i = 0; i < n; i++) {
-		result_list.push_back(sampling_list[i]);
+vector<int> list_to_discrete(const vector<double> & list, int num_classes) {
+	vector<int> int_list(list.begin(), list.end());
+	vector<int> classes(num_classes, 0);
+	for(int i = 0; i < int_list.size(); i++) {
+		int cls = int_list[i];
+		assert(cls > 0);
+		assert(cls < num_classes);
+		classes[cls] += 1;
 	}
+	return classes;
 }
 
-
-/*
-Sample from a list with replacement
-puts the result in results_list
-*/
-template<typename T>
-void sample_with_replacement(vector<T> sampling_list, int n, vector<T> & result_list) {
-	result_list.empty();
-	int size = sampling_list.size();
-	for(int i = 0; i < n; i++) {
-		int index = rand() % size;
-		result_list.push_back(sampling_list[index]);
+void add_counts(vector<int> & list1, vector<int> & list2) {
+	if(list1.size() == 0) {
+		for(int i = 0; i < list2.size(); i++) {
+			list1.push_back(0);
+		}
+	}
+	assert(list1.size() == list2.size());
+	for(int i = 0; i < list1.size(); i++) {
+		list1[i] += list2[i];
 	}
 }

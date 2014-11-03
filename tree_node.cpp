@@ -13,7 +13,6 @@ TreeNode::TreeNode() {
 	left = right = NULL;
 	column = -1;
 	value = 1337.1337;
-	classification = -1;
 }
 
 TreeNode::~TreeNode() {
@@ -69,7 +68,7 @@ void TreeNode::train(Matrix & m, vector<int> columns) {
 	assert(m.columns() > 0);
 	if(columns.size() == 0) {
 		//cout << "column size 0" << endl;
-		classification = mode(m.column(-1));
+		class_counts = list_to_discrete(m.column(-1));
 		return;
 	}
 	//Decide which column to split on
@@ -90,7 +89,7 @@ void TreeNode::train(Matrix & m, vector<int> columns) {
 	m.split(min_index, v, l, r);
 	if(l.rows() <= 0 || r.rows() <= 0) {
 		//cout << "l or r: 0 rows" << endl;
-		classification = mode(m.column(-1));
+		class_counts = list_to_discrete(m.column(-1));
 		return;
 	}
 	//cout << l.rows() << ", " << r.rows() << endl;
@@ -99,7 +98,7 @@ void TreeNode::train(Matrix & m, vector<int> columns) {
 	double gain = error - (left_error - right_error);
 	if(gain < MINIMUM_GAIN) {
 		//cout << "split on min gain: " << left_error << " " << right_error << " " << gain << endl;
-		classification = mode(m.column(-1));
+		class_counts = list_to_discrete(m.column(-1));
 		return;
 	}
 	column = min_index;
@@ -114,9 +113,9 @@ void TreeNode::train(Matrix & m, vector<int> columns) {
 	//cout << "Splitton on column " << min_index << " with value " << value << endl;
 }
 
-int TreeNode::classify(vector<double> & row) {
-	if(classification != -1) {
-		return classification;
+vector<int> TreeNode::classify(vector<double> & row) {
+	if(class_counts.size() > 0) {
+		return class_counts;
 	}
 	if(row[column] < value) {
 		assert(left != NULL);

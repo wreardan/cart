@@ -1,11 +1,11 @@
 import sys
 from copy import copy
-from random import shuffle, sample, choice
+from random import shuffle, sample, choice, random
 from multiprocessing.pool import Pool
 from itertools import chain
 
 from matrix import Matrix
-from stats import mean, regression_score, list_to_discrete, add_distributions,\
+from stats import mean, regression_score, list_to_discrete, merge_distributions,\
     max_index, counts_to_probabilities
 
 
@@ -24,7 +24,7 @@ class TreeNode():
         self.value = None
         self.probabilities = None
 
-    def train(self, matrix, columns, num_classes=2):
+    def train(self, matrix, columns, num_classes=2, num_columns=7):
         """Train the regression tree on a matrix of data using features
         in columns"""
         assert(len(matrix) > 0)
@@ -34,21 +34,22 @@ class TreeNode():
         # Decide which column to split on
         min_error = 1000000000
         min_index = columns[0]
+        min_m, min_b = 0, 0
         error = min_error
         for col_index in columns:
-            error = regression_score(matrix, col_index)
+            error, m, b = regression_score(matrix, col_index)
             #print(col_index, error)
             if error < min_error:
                 min_index = col_index
                 min_error = error
+                min_m, min_b = m, b
         # Split on lowest-error column
-        value = mean(matrix.column(min_index))
-        left, right = matrix.split(min_index, value)
+        left, right = matrix.split_regression(min_index, min_m, min_b)
         if len(left) <= 0 or len(right) <= 0:
             self.probabilities = list_to_discrete(matrix.column(-1), num_classes)
             return
-        left_error = regression_score(left, min_index)
-        right_error = regression_score(right, min_index)
+        left_error, m, b = regression_score(left, min_index)
+        right_error, m, b = regression_score(right, min_index)
         gain = error-(left_error+right_error)
         # Stop recursing if below threshhold
         if gain < MINIMUM_GAIN:
@@ -57,7 +58,7 @@ class TreeNode():
         #print(gain, min_index, min_error)
         # Set self values
         self.column = min_index
-        self.value = value
+        self.value = min_m, min_b
         # Create new child nodes
         new_columns = copy(columns)
         new_columns.remove(min_index)
@@ -70,7 +71,9 @@ class TreeNode():
         """Classify a vector of data using this regression tree"""
         if self.probabilities is not None:
             return self.probabilities
-        if row[self.column] < self.value:
+        m, b = self.value
+        x = row[self.column]
+        if m * x < b:
             return self.left.classify(row)
         else:
             return self.right.classify(row)
@@ -103,12 +106,15 @@ class Forest():
         distributions = []
         for tree in self.trees:
             dist = tree.classify(row)
-            #dist = counts_to_probabilities(dist)
+            dist = counts_to_probabilities(dist)
             distributions.append(dist)
-        total_counts = add_distributions(distributions)
+        merged = merge_distributions(distributions)
+        #print(merged)
         #print(total_counts, row[-1])
-        p = float(total_counts[1])/sum(total_counts)
-        return max_index(total_counts), p
+        #p = float(total_counts[1])/sum(total_counts)
+        index = max_index(merged)
+        p = merged[1]
+        return index, p
 
 
 class BalancedRandomForest(Forest):
@@ -148,14 +154,6 @@ def parallel_train(state):
     return root
 
 
-def select_subset(array, number):
-    """returns a random subset of array of size number.
-    Immutable."""
-    col_set = copy(array)
-    shuffle(col_set)
-    return col_set[:number]
-
-
 class ParallelForest(Forest):
     """A parallel implementation of Random Forest.
     It starts a Pool of processes, then uses map to create a
@@ -171,7 +169,7 @@ class ParallelForest(Forest):
     def train(self, matrix):
         all_columns = list(range(matrix.columns()-1))
         n_samples = int(self.p_samples * len(matrix))
-        star = [(matrix, select_subset(all_columns, self.n_features), n_samples) for _ in range(self.n_trees)]
+        star = [(matrix, sample(all_columns, self.n_features), n_samples) for _ in range(self.n_trees)]
         self.trees = self.pool.map(parallel_train, star)
 
 
@@ -234,7 +232,7 @@ def main():
     matrix = train.shuffled()  # Shuffle Matrix so classes are spread out
 
     # Regular Random Forest algorithm:
-    # args = (500, 7, 0.1)  # num_trees, num_features, num_samples
+    # args = (500, 15, 0.1)  # num_trees, num_features, num_samples
     # percent, p_values, all_classes = cross_fold_validation(matrix, Forest, args)
 
     # Parallel Forest Classifier:
@@ -250,9 +248,10 @@ def main():
     # Write soft labels
     actual_classes = matrix.column(-1)
     with open('./data/p_values.txt', 'w') as f:
-        f.write('Gene Name\tP Value\tWes Class\tActual Class\n')
+        #f.write('Gene Name\tP Value\tWes Class\tActual Class\n')
         for name, p, class_id, actual in zip(matrix.row_labels, p_values, all_classes, actual_classes):
-            f.write('%s\t%f\t%f\t%f\n' % (name, p, class_id, actual))
+            #f.write('%s\t%f\t%f\t%f\n' % (name, p, class_id, actual))
+            f.write('%f\t%d\n' % (p, actual))
 
 
 

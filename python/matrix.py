@@ -35,15 +35,18 @@ class Matrix():
         index = self.column_labels.index(name)
         return self.column(index)
 
-    def save(self, filename):
+    def save(self, filename, write_headers=True):
         """Save matrix to tab-separated file"""
         with open(filename, 'w') as f:
             # Write Header
-            header = '\t'.join(self.column_labels) + '\n'
-            f.write(header)
+            if write_headers:
+                header = '\t'.join(self.column_labels) + '\n'
+                f.write(header)
             # Write elements
             for i, row in enumerate(self.elements):
-                string = self.row_labels[i] + '\t'
+                string = ''
+                if write_headers:
+                    string += self.row_labels[i] + '\t'
                 string += '\t'.join(map(str, row)) + '\n'
                 f.write(string)
 
@@ -100,7 +103,7 @@ class Matrix():
         """Returns a copy of this Matrix"""
         rows = range(self.rows())
         cols = range(self.columns())
-        return self.submatrix(rows,cols)
+        return self.submatrix(rows, cols)
 
     def transpose(self):
         """exchange rows and columns.
@@ -140,6 +143,24 @@ class Matrix():
                 right.elements.append(copy(row))
         return left, right
 
+    def split_regression(self, column, m, b):
+        """
+        Split the Matrix into two submatrices based on a regression cutoff
+        :param column: column index
+        :param m: slope
+        :param b: intercept
+        :return: <Matrix, >=Matrix
+        """
+        left_rows = []
+        right_rows = []
+        for i, row in enumerate(self.elements):
+            if row[column] * m < b:
+                left_rows.append(i)
+            else:
+                right_rows.append(i)
+        all_columns = range(self.columns())
+        return self.submatrix(left_rows, all_columns), self.submatrix(right_rows, all_columns)
+
     def extract(self, column, value):
         """return submatrix of all rows where column=value"""
         row_indices = []
@@ -164,7 +185,6 @@ class Matrix():
         balanced algorithm"""
         matrices = self.discrete_split(column)
         assert(len(matrices) > 1)
-        all_cols = range(self.columns())
         result = Matrix()
         for m in matrices:
             sm = m.random_subset(n_samples_per_subset)
@@ -177,12 +197,6 @@ class Matrix():
         row_index = self.row_labels.index(label)
         assert(row_index != -1)
         return self.elements[row_index]
-
-    def copy(self):
-        """returns a copy of this matrix"""
-        all_rows = list(range(self.rows()))
-        all_columns = list(range(self.columns()))
-        return self.submatrix(all_rows, all_columns)
 
     def merge(self, other):
         """Merge another matrix with this Matrix,
@@ -206,7 +220,7 @@ class Matrix():
         s = self.copy()
         for label in other.column_labels[1:]:
             s.column_labels.append(label)
-        for i,row in enumerate(s):
+        for i, row in enumerate(s):
             row.extend(other[i])
         return s
 
@@ -265,7 +279,7 @@ class Matrix():
         # Validate number of Columns in each row against
         # Column Labels
         num_cols = len(self.column_labels)-1
-        for i,row in enumerate(self.elements):
+        for i, row in enumerate(self.elements):
             if len(row) != num_cols:
                 raise Exception('Invalid number of columns in row %d' % i)
         # Validate number of rows against row_labels

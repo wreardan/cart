@@ -1,5 +1,6 @@
 #include "parallel_forest.hpp"
 #include "util.hpp"
+#include "stats.hpp"
 
 #include "pthread_pool.h"
 

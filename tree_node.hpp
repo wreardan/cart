@@ -8,13 +8,13 @@ using std::string;
 
 extern double MINIMUM_GAIN;
 
-class TreeNode : public Classifier {
+class TreeNode {
 private:
 	TreeNode * left;
 	TreeNode * right;
 	int column;
 	double value;
-	int classification;
+	vector<int> class_counts;
 
 public:
 	TreeNode();
@@ -23,5 +23,5 @@ public:
 	int count();
 	void train(Matrix & m, vector<int> columns);
 	virtual void train(Matrix & m);
-	virtual int classify(vector<double> & row);
+	virtual vector<int> classify(vector<double> & row);
 };
