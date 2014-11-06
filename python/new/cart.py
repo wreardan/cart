@@ -18,6 +18,12 @@ def gini_impurity(array):
     return 1 - sum([p*p for p in probabilities])
 
 
+def gini_gain(array, splits):
+    # Average child gini impurity
+    splits_impurity = sum([gini_impurity(split)*float(len(split))/len(array) for split in splits])
+    return gini_impurity(array) - splits_impurity
+
+
 def entropy(array):
     # Get probabilities of element values in array
     probabilities = DiscreteRandomVariable(array).distribution
@@ -27,11 +33,13 @@ def entropy(array):
 
 def information_gain(array, splits):
     # Average child entropy
-    splits_entropy = sum([entropy(split) for split in splits]) / len(splits)
+    splits_entropy = sum([entropy(split)*float(len(split))/len(array) for split in splits])
     return entropy(array) - splits_entropy
 
 
-MINIMUM_GAIN = 0.01
+
+gain_function = gini_gain
+MINIMUM_GAIN = 0.001
 MINIMUM_NUM_SAMPLES = 40
 
 
@@ -129,18 +137,18 @@ class Node():
         max_val = None
         for column in subset:
             x = matrix.column(column)
-            rv = ContinuousRandomVariable(x, 1000)
+            rv = ContinuousRandomVariable(x, 100)
             for _ in range(100):
                 splitval = rv.sample()
                 splits = self.split(x, y, splitval)
                 #print(len(splits[0]), len(splits[1]), len(x), splitval)
-                gain = information_gain(y, splits)
+                gain = gain_function(y, splits)
                 if gain > max_gain:
                     max_col = column
                     max_val = splitval
                     max_gain = gain
                     best_rv = rv
-        #print('best feature [%d]<%f with gain %f, len(%d)' % (max_col, max_val, max_gain, len(matrix)))
+        print('best feature [%d]<%f with gain %f, len(%d)' % (max_col, max_val, max_gain, len(matrix)))
         #print(best_rv.lower, best_rv.upper, best_rv.delta, max_val)
         assert(max_val < best_rv.upper)
         return max_col, max_val, max_gain
@@ -266,7 +274,7 @@ def main():
     m.load(sys.argv[1])
     del(m[0])  # Delete Header row
     # tree = Node()
-    # tree.train(m, list(range(1,45)), 7)
+    # tree.train(m, list(range(1,len(m[0])-1)), 7)
     # tree.dump()
     #print('%d nodes in tree' % tree.size())
     # forest = Forest(1, 7)
@@ -277,7 +285,7 @@ def main():
     #         if len(dist) < 2:
     #             dist.append(0.0)
     #         f.write('%f\t%d\n' % (dist[1], row[-1]))
-    forest_args = (10, 7)
+    forest_args = (500, 7, 16)
     aupr = cross_fold_validation(m, ParallelForest, forest_args)
     with open(sys.argv[2], 'w') as f:
         for p, cls in aupr:
