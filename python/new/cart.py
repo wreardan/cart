@@ -148,7 +148,7 @@ class Node():
                     max_val = splitval
                     max_gain = gain
                     best_rv = rv
-        print('best feature [%d]<%f with gain %f, len(%d)' % (max_col, max_val, max_gain, len(matrix)))
+        #print('best feature [%d]<%f with gain %f, len(%d)' % (max_col, max_val, max_gain, len(matrix)))
         #print(best_rv.lower, best_rv.upper, best_rv.delta, max_val)
         assert(max_val < best_rv.upper)
         return max_col, max_val, max_gain
