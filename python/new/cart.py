@@ -216,23 +216,27 @@ class Forest():
 
 
 def parallel_train(state):
-    matrix, columns, n_features = state
+    matrix, columns, n_features, p_samples = state
+    n_samples = int(len(matrix) * p_samples)
+    shuffle(matrix)
+    matrix = Matrix(matrix[:n_samples])
     root = Node()
     root.train(matrix, columns, n_features)
     return root
 
 
 class ParallelForest(Forest):
-    def __init__(self, n_trees=100, n_features=7, processes=0):
+    def __init__(self, n_trees=100, n_features=7, processes=0, p_samples=0.3):
         self.n_trees = n_trees
         self.trees = []
         self.n_features = n_features
+        self.p_samples = p_samples
         if processes <= 0:
             processes = cpu_count() - 1
         self.pool = Pool(processes)
 
     def train(self, matrix, features):
-        star = [(matrix, features, self.n_features) for _ in range(self.n_trees)]
+        star = [(matrix, features, self.n_features, self.p_samples) for _ in range(self.n_trees)]
         self.trees = self.pool.map(parallel_train, star)
 
 
@@ -285,7 +289,7 @@ def main():
     #         if len(dist) < 2:
     #             dist.append(0.0)
     #         f.write('%f\t%d\n' % (dist[1], row[-1]))
-    forest_args = (500, 7, 16)
+    forest_args = (500, 7, 10)
     aupr = cross_fold_validation(m, ParallelForest, forest_args)
     with open(sys.argv[2], 'w') as f:
         for p, cls in aupr:
