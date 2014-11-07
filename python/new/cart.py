@@ -12,6 +12,9 @@ from multiprocessing.pool import Pool
 from multiprocessing import cpu_count
 
 def gini_impurity(array):
+    # Return 0 impurity for the empty set
+    if len(array) == 0:
+        return 0.0
     # Get probabilities of element values in array
     probabilities = DiscreteRandomVariable(array).distribution
     # Calculate impurity = 1 - sum(squared_probability)
@@ -25,6 +28,9 @@ def gini_gain(array, splits):
 
 
 def entropy(array):
+    # Return 0 entropy for the empty set
+    if len(array) == 0:
+        return 0.0
     # Get probabilities of element values in array
     probabilities = DiscreteRandomVariable(array).distribution
     # Sum -p_i * log2(p_i)
@@ -39,8 +45,9 @@ def information_gain(array, splits):
 
 
 gain_function = gini_gain
-MINIMUM_GAIN = 0.001
+MINIMUM_GAIN = 0.01
 MINIMUM_NUM_SAMPLES = 40
+PRUNE_OOB = 0.13
 
 
 class Matrix(list):
@@ -100,6 +107,12 @@ class Matrix(list):
                 greater.append(copy(row))
         return lesser, greater
 
+    def sample_class_rows(self, column, class_value, n_samples):
+        """Samples with replacement from class.
+        Returns row indices"""
+        rows = [i for i in range(len(self)) if self[i][column] == class_value]
+        return [choice(rows) for _ in range(n_samples)]
+
 
 class Node():
     def __init__(self):
@@ -129,6 +142,15 @@ class Node():
         greater_equal = [y for x,y in zip(X, Y) if x >= splitval]
         return lesser, greater_equal
 
+    def feature_splits(self, X, Y):
+        split_values = []
+        sorted_xy = sorted(zip(X, Y))
+        for i in range(1, len(sorted_xy)):
+            if sorted_xy[i-1][1] != sorted_xy[i][1]:
+                average = (sorted_xy[i-1][0] + sorted_xy[i][0]) / 2.0
+                split_values.append(average)
+        return split_values
+
     def best_split(self, matrix, column_list, n_features):
         subset = sample(column_list, n_features)
         y = matrix.column(-1)
@@ -137,9 +159,8 @@ class Node():
         max_val = None
         for column in subset:
             x = matrix.column(column)
-            rv = ContinuousRandomVariable(x, 100)
-            for _ in range(100):
-                splitval = rv.sample()
+            split_values = self.feature_splits(x, y)
+            for splitval in split_values:
                 splits = self.split(x, y, splitval)
                 #print(len(splits[0]), len(splits[1]), len(x), splitval)
                 gain = gain_function(y, splits)
@@ -147,10 +168,9 @@ class Node():
                     max_col = column
                     max_val = splitval
                     max_gain = gain
-                    best_rv = rv
         #print('best feature [%d]<%f with gain %f, len(%d)' % (max_col, max_val, max_gain, len(matrix)))
         #print(best_rv.lower, best_rv.upper, best_rv.delta, max_val)
-        assert(max_val < best_rv.upper)
+        #assert(max_val < best_rv.upper)
         return max_col, max_val, max_gain
 
     def save_class_distribution(self, matrix):
@@ -176,14 +196,11 @@ class Node():
             #print(len(left_matrix), len(right_matrix))
             assert(len(left_matrix) > 0)
             assert(len(right_matrix) > 0)
-            # Remove column from list and pass down the chain
-            new_column_list = list(column_list)
-            new_column_list.remove(col)
             # Train Recursively
             self.left = Node()
-            self.left.train(left_matrix, new_column_list, n_features, gain)
+            self.left.train(left_matrix, column_list, n_features, gain)
             self.right = Node()
-            self.right.train(right_matrix, new_column_list, n_features, gain)
+            self.right.train(right_matrix, column_list, n_features, gain)
         except AssertionError:
             self.save_class_distribution(matrix)
 
@@ -215,18 +232,48 @@ class Forest():
         return avg
 
 
+def max_index(x):
+    """O(2N)"""
+    minimum = max(x)
+    for i, val in enumerate(x):
+        if val == minimum:
+            return i
+
+
 def parallel_train(state):
+    # Get parameters
     matrix, columns, n_features, p_samples = state
     n_samples = int(len(matrix) * p_samples)
-    shuffle(matrix)
-    matrix = Matrix(matrix[:n_samples])
+    # Generate subsets
+    row_indices = list(range(len(matrix)))
+    # training_rows = [choice(row_indices) for _ in range(len(matrix))]
+    training_rows = []
+    num_classes = len(set(matrix.column(-1)))
+    for cls in range(num_classes):
+        rows = matrix.sample_class_rows(-1, cls, int(n_samples/num_classes))
+        training_rows.extend(rows)
+    training = matrix.rows(training_rows)
+    testing_rows = [r for r in row_indices if r not in training_rows]
+    testing = matrix.rows(testing_rows)
+    # Create and train tree
     root = Node()
-    root.train(matrix, columns, n_features)
+    root.train(training, columns, n_features)
+    # Calculate out-of-bag (oob) error
+    right = 0
+    wrong = 0
+    for row in testing:
+        dist = root.classify(row)
+        c = max_index(dist)
+        if c == row[-1]:
+            right += 1
+        else:
+            wrong += 1
+    root.oob_error = float(wrong) / (right + wrong)
     return root
 
 
 class ParallelForest(Forest):
-    def __init__(self, n_trees=100, n_features=7, processes=0, p_samples=0.3):
+    def __init__(self, n_trees=100, n_features=7, processes=0, p_samples=1.0):
         self.n_trees = n_trees
         self.trees = []
         self.n_features = n_features
@@ -238,6 +285,9 @@ class ParallelForest(Forest):
     def train(self, matrix, features):
         star = [(matrix, features, self.n_features, self.p_samples) for _ in range(self.n_trees)]
         self.trees = self.pool.map(parallel_train, star)
+        for tree in self.trees:
+            # tree.dump()
+            print('oob error(%d): %f' % (tree.size(), tree.oob_error))
 
 
 def cross_fold_validation(matrix, classifier, args, n_folds=10):
@@ -265,6 +315,7 @@ def cross_fold_validation(matrix, classifier, args, n_folds=10):
         for row in testing_matrix:
             result = cls.classify(row)
             if len(result) < 2:
+                print(result, set(matrix.column(-1)))
                 p = 0.0
             else:
                 p = result[1]
@@ -289,8 +340,13 @@ def main():
     #         if len(dist) < 2:
     #             dist.append(0.0)
     #         f.write('%f\t%d\n' % (dist[1], row[-1]))
-    forest_args = (500, 7, 10)
-    aupr = cross_fold_validation(m, ParallelForest, forest_args)
+    forest_type = 'parallel'
+    if forest_type == 'parallel':
+        parallel_forest_args = (500, 7, 4)
+        aupr = cross_fold_validation(m, ParallelForest, parallel_forest_args)
+    if forest_type == 'regular':
+        forest_args = (10, 7)
+        aupr = cross_fold_validation(m, Forest, forest_args)
     with open(sys.argv[2], 'w') as f:
         for p, cls in aupr:
             f.write('%f\t%d\n' % (p, cls))

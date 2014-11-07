@@ -10,18 +10,15 @@ class RandomVariable(object):
 
 
 class DiscreteRandomVariable(RandomVariable):
-    def __init__(self, array):
+    def __init__(self, array, n_classes=2):
         """
         takes a list of positive ints and turns it into
         a discrete distribution
         i.e. array([0,0,1,1,2]) => [0.4, 0.4, 0.2]
         """
         super(self.__class__, self).__init__()
-        counts = []
+        counts = [0] * n_classes
         for element in array:
-            if element>=len(counts):
-                num_zeros = element-len(counts)+1
-                counts.extend([0] * num_zeros)
             counts[element] += 1
         self.distribution = [float(count)/len(array) for count in counts]
 
