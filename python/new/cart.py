@@ -26,6 +26,19 @@ def gini_gain(array, splits):
     splits_impurity = sum([gini_impurity(split)*float(len(split))/len(array) for split in splits])
     return gini_impurity(array) - splits_impurity
 
+def weighted_gini_impurity(array, weights):
+    if len(array) == 0:
+        return 0.0
+    probabilities = DiscreteRandomVariable(array).distribution
+    # Calculate impurity = 1 - sum(squared_probability)
+    return 1 - sum([(w*p)*(w*p) for p, w in zip(probabilities, weights)])
+
+CLASS_WEIGHTS = [1,2]
+
+def weighted_gini_gain(array, splits, weights=CLASS_WEIGHTS):
+    # Average child gini impurity
+    splits_impurity = sum([weighted_gini_impurity(split,weights)*float(len(split))/len(array) for split in splits])
+    return weighted_gini_impurity(array,weights) - splits_impurity
 
 def entropy(array):
     # Return 0 entropy for the empty set
@@ -42,12 +55,34 @@ def information_gain(array, splits):
     splits_entropy = sum([entropy(split)*float(len(split))/len(array) for split in splits])
     return entropy(array) - splits_entropy
 
+def max_p(array):
+    probabilities = DiscreteRandomVariable(array).distribution
+    return max(probabilities)
+
+def max_p_gain(array, splits):
+    "https://homes.cs.washington.edu/~etzioni/papers/brute-aai94.pdf"
+    split_max_p = max([max_p(split) for split in splits])
+    p = max_p(array)
+    return split_max_p - p
 
 
-gain_function = gini_gain
-MINIMUM_GAIN = 0.01
+def normalize(array):
+    s = sum(array)
+    for i in range(len(array)):
+        array[i] /= s
+
+def normalize_square(array):
+    pass
+
+
+GAIN_FUNCTION = weighted_gini_gain
+MINIMUM_GAIN = 0.001
 MINIMUM_NUM_SAMPLES = 40
-PRUNE_OOB = 0.13
+PRUNE_OOB = 1.0
+BALANCED_CLASSIFIER = False
+N_FEATURES = 7
+N_TREES = 500
+P_SAMPLES = 1.0
 
 
 class Matrix(list):
@@ -163,7 +198,7 @@ class Node():
             for splitval in split_values:
                 splits = self.split(x, y, splitval)
                 #print(len(splits[0]), len(splits[1]), len(x), splitval)
-                gain = gain_function(y, splits)
+                gain = GAIN_FUNCTION(y, splits)
                 if gain > max_gain:
                     max_col = column
                     max_val = splitval
@@ -174,8 +209,11 @@ class Node():
         return max_col, max_val, max_gain
 
     def save_class_distribution(self, matrix):
-        self.distribution = DiscreteRandomVariable(matrix.column(-1))
-        assert(len(self.distribution.distribution) > 0)
+        self.distribution = DiscreteRandomVariable(matrix.column(-1)).distribution
+        # Apply weights
+        for i in range(len(self.distribution)):
+            self.distribution[i] *= CLASS_WEIGHTS[i]
+        assert(len(self.distribution) > 0)
 
     def train(self, matrix, column_list, n_features=7, parent_gain=0.0):
         # Check for stopping criteria
@@ -210,7 +248,7 @@ class Node():
                 return self.left.classify(row)
             else:
                 return self.right.classify(row)
-        return self.distribution.distribution
+        return self.distribution
 
 class Forest():
     def __init__(self, n_trees=100, n_features=7):
@@ -244,36 +282,44 @@ def parallel_train(state):
     # Get parameters
     matrix, columns, n_features, p_samples = state
     n_samples = int(len(matrix) * p_samples)
-    # Generate subsets
-    row_indices = list(range(len(matrix)))
-    # training_rows = [choice(row_indices) for _ in range(len(matrix))]
-    training_rows = []
-    num_classes = len(set(matrix.column(-1)))
-    for cls in range(num_classes):
-        rows = matrix.sample_class_rows(-1, cls, int(n_samples/num_classes))
-        training_rows.extend(rows)
-    training = matrix.rows(training_rows)
-    testing_rows = [r for r in row_indices if r not in training_rows]
-    testing = matrix.rows(testing_rows)
-    # Create and train tree
-    root = Node()
-    root.train(training, columns, n_features)
-    # Calculate out-of-bag (oob) error
-    right = 0
-    wrong = 0
-    for row in testing:
-        dist = root.classify(row)
-        c = max_index(dist)
-        if c == row[-1]:
-            right += 1
+    oob_error = PRUNE_OOB
+    cycles = 0
+    MAX_CYCLES = 10
+    while oob_error >= PRUNE_OOB and cycles < MAX_CYCLES:
+        # Generate subsets
+        row_indices = list(range(len(matrix)))
+        if BALANCED_CLASSIFIER:
+            training_rows = []
+            num_classes = len(set(matrix.column(-1)))
+            for cls in range(num_classes):
+                rows = matrix.sample_class_rows(-1, cls, int(n_samples/num_classes))
+                training_rows.extend(rows)
         else:
-            wrong += 1
-    root.oob_error = float(wrong) / (right + wrong)
+            training_rows = [choice(row_indices) for _ in range(n_samples)]
+        training = matrix.rows(training_rows)
+        testing_rows = [r for r in row_indices if r not in training_rows]
+        testing = matrix.rows(testing_rows)
+        # Create and train tree
+        root = Node()
+        root.train(training, columns, n_features)
+        # Calculate out-of-bag (oob) error
+        right = 0
+        wrong = 0
+        for row in testing:
+            dist = root.classify(row)
+            c = max_index(dist)
+            if c == row[-1]:
+                right += 1
+            else:
+                wrong += 1
+        oob_error = float(wrong) / (right + wrong)
+        cycles += 1
+    root.oob_error = oob_error
     return root
 
 
 class ParallelForest(Forest):
-    def __init__(self, n_trees=100, n_features=7, processes=0, p_samples=1.0):
+    def __init__(self, n_trees=100, n_features=7, processes=0, p_samples=P_SAMPLES):
         self.n_trees = n_trees
         self.trees = []
         self.n_features = n_features
@@ -328,24 +374,12 @@ def main():
     m = Matrix()
     m.load(sys.argv[1])
     del(m[0])  # Delete Header row
-    # tree = Node()
-    # tree.train(m, list(range(1,len(m[0])-1)), 7)
-    # tree.dump()
-    #print('%d nodes in tree' % tree.size())
-    # forest = Forest(1, 7)
-    # forest.train(m, range(1, 45))
-    # with open(sys.argv[2], 'w') as f:
-    #     for row in m:
-    #         dist = forest.classify(row)
-    #         if len(dist) < 2:
-    #             dist.append(0.0)
-    #         f.write('%f\t%d\n' % (dist[1], row[-1]))
     forest_type = 'parallel'
     if forest_type == 'parallel':
-        parallel_forest_args = (500, 7, 4)
+        parallel_forest_args = (N_TREES, N_FEATURES, 4)
         aupr = cross_fold_validation(m, ParallelForest, parallel_forest_args)
     if forest_type == 'regular':
-        forest_args = (10, 7)
+        forest_args = (N_TREES, N_FEATURES)
         aupr = cross_fold_validation(m, Forest, forest_args)
     with open(sys.argv[2], 'w') as f:
         for p, cls in aupr:
