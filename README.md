@@ -7,20 +7,20 @@ There are two versions of the software: a Python version in the python folder.  
 To run the program, use the following parameters:
 ./randomForest -t training_file -c data_to_classify -p 16 -n 1000 -f 30 -m 0.1
 ## Required Parameters
--t training_file
-    input matrix file to train trees
--c data_to_classify
-    matrix of data to classify
+- -t training_file
+    - input matrix file to train trees
+- -c data_to_classify
+    - matrix of data to classify
 ## Optional Parameters
--p 16
-    use 16 threads in a thread pool to process trees
--n 1000
-    use 1000 trees in the forest
--f 30
-    use a subset of 30 features for each tree
--m 0.1
-    minimum gain of sum of squares to continue splitting
-    gain = sum_of_squares - (left_squares + right_squares)
+- -p 16
+    - use 16 threads in a thread pool to process trees
+- -n 1000
+    - use 1000 trees in the forest
+- -f 30
+    - use a subset of 30 features for each tree
+- -m 0.1
+    - minimum gain of sum of squares to continue splitting
+    - gain = sum_of_squares - (left_squares + right_squares)
 
 # Class Descriptions
 - Matrix - 2d double data structure with utility functions
