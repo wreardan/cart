@@ -4,6 +4,9 @@ test: build
 test2: build
 	time ./randomForest -t ./data/zhen/merged.txt -p 4 -n 1000 -f 15 -g 0.1
 
+py: python/cart.py
+	python python/cart.py ./data/H1hesc_allforward_features.txt ./data/p_values_python.txt
+
 build:
 	g++ -pthread main.cpp stats.cpp tree_node.cpp matrix.cpp forest.cpp parallel_forest.cpp pthread_pool.c -o randomForest
 
