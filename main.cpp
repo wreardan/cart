@@ -1,6 +1,7 @@
 #include <iostream>
 using namespace std;
 #include <cstdlib>
+#include <cstdio>
 #include <cassert>
 #include <unistd.h>
 
@@ -100,7 +101,7 @@ void folded_train_and_test(Matrix & input_matrix, int n_folds) {
 		Matrix training = matrix.submatrix(training_rows, all_columns);
 		//Get testing subset
 		vector<int> testing_rows = range(i*N, (i+1)*N);
-		if(i == n_folds-1) { //include extra elements
+		if(i == n_folds-1) { //include extra elements into last fold
 			testing_rows = range(i*N, R);
 		}
 		Matrix testing = matrix.submatrix(testing_rows, all_columns);
@@ -193,13 +194,34 @@ int main(int argc, char *argv[]) {
 	m.load(filename);
 	cout << "train matrix: " << m.rows() << " rows and " << m.columns() << " columns in matrix" << endl;
 
+	/*
 	//Testing matrix
 	Matrix test;
 	test.load(test_filename);
 	cout << "test matrix: " << test.rows() << " rows and " << test.columns() << " columns in matrix" << endl;
+	*/
 
 	//Run classifiers
 	folded_train_and_test(m, 10);
+
+	//Debugging shizzle
+	/*
+	double c1[] = {0,0,0,0,0,1,1,1,1,1};
+	vector<double> classes1;
+	classes1.assign(c1,c1+10);
+
+	double c2[] = {0,0,0,0,0};
+	vector<double> classes2;
+	classes2.assign(c2,c2+5);
+
+	double c3[] = {1,1,1,1,1};
+	vector<double> classes3;
+	classes3.assign(c3,c3+5);
+
+	printf("gini impurities: %f, %f, %f\n", gini_impurity(classes1,2), gini_impurity(classes2,2), gini_impurity(classes3,2));
+	printf("gini gain: %f\n", gini_gain(classes1, classes2, classes3, 2));
+	//ugh gini gain is correct, what next?
+	*/
 
 	return 0;
 }

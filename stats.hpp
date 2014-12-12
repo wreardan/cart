@@ -17,6 +17,14 @@ void test_regression();
 vector<int> list_to_discrete(const vector<double> & list, int num_classes=2);
 void add_counts(vector<int> & list1, vector<int> & list2);
 
+vector<double> discrete_p_values(const vector<double> & list, int num_classes=2);
+
+double gini_impurity(const vector<double> & classes, int num_classes);
+double gini_gain(const vector<double> & parent_classes,
+                const vector<double> & child1_classes,
+                const vector<double> & child2_classes,
+                int num_classes);
+
 //Template Functions (must be in header)
 
 /*
@@ -64,4 +72,21 @@ void sample_with_replacement(vector<T> sampling_list, int n, vector<T> & result_
         int index = rand() % size;
         result_list.push_back(sampling_list[index]);
     }
+}
+
+//http://stackoverflow.com/questions/3376124/how-to-add-element-by-element-of-two-stl-vectors
+//used to add two vectors together
+#include <algorithm>
+#include <functional>
+template <typename T>
+std::vector<T> operator+(const std::vector<T>& a, const std::vector<T>& b)
+{
+    assert(a.size() == b.size());
+
+    std::vector<T> result;
+    result.reserve(a.size());
+
+    std::transform(a.begin(), a.end(), b.begin(), 
+                   std::back_inserter(result), std::plus<T>());
+    return result;
 }

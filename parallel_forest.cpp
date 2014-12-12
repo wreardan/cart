@@ -8,6 +8,8 @@
 #include <iostream>
 using namespace std;
 
+#include <cstdio>
+
 ParallelForest::ParallelForest() {
 	init(100, 10);
 	n_threads = 4;
@@ -31,7 +33,7 @@ void * training_thread(void * void_ptr) {
 }
 
 void ParallelForest::train(Matrix & m) {
-	cout << "parallel forest training" << endl;
+	printf("parallel forest training with %zu trees and %d threads\n", trees.size(), n_threads);
 	//Create thread pool
 	void * pool = pool_start(&training_thread, n_threads);
 	//Run through threads
@@ -39,7 +41,8 @@ void ParallelForest::train(Matrix & m) {
 	vector<int> all_columns = range(m.columns()-1);
 	for(int i = 0; i < trees.size(); i++) {
 		TreeNode & tree = trees[i];
-		sample(all_columns, n_features, all_subsets[i]);
+		//sample(all_columns, n_features, all_subsets[i]);
+		all_subsets[i] = all_columns;
 
 		//create work
 		struct Work * work = new struct Work;

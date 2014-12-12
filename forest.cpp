@@ -6,8 +6,10 @@
 #include <iostream>
 using namespace std;
 
+#include <cstdio>
+
 Forest::Forest() {
-	init(100, 10);
+	//init(100, 10);  // this is called by child-classes!!
 }
 
 Forest::Forest(int n_trees, int n_features) {
@@ -15,6 +17,7 @@ Forest::Forest(int n_trees, int n_features) {
 }
 
 void Forest::init(int n_trees, int n_features) {
+	//printf("Forest::init(n_trees=%d, n_features=%d)\n", n_trees, n_features);
 	this->n_trees = n_trees;
 	this->n_features = n_features;
 	//Create Trees
@@ -36,11 +39,10 @@ void Forest::train(Matrix & m) {
 }
 
 int Forest::classify(vector<double> & row) {
-	vector<int> all_class_counts(2, 0);
+	vector<double> summed_distributions(2, 0.0);
 	for(int i = 0; i < n_trees; i++) {
 		TreeNode & tree = trees[i];
-		vector<int> class_counts = tree.classify(row);
-		add_counts(all_class_counts, class_counts);
+		vector<double> distribution = tree.classify(row);
 	}
-	return (int)mode(votes);
+	return max_index(summed_distributions);
 }

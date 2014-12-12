@@ -14,7 +14,12 @@ private:
 	TreeNode * right;
 	int column;
 	double value;
-	vector<int> class_counts;
+	double gain;
+	vector<double> distribution;
+
+//Helper methods:
+	void split_xy(const vector<double> & X, const vector<double> & Y, double value, vector<double> & lesser, vector<double> & greater);
+	void train_gini(Matrix & m, vector<int> columns, int n_columns=7, int n_classes=2);
 
 public:
 	TreeNode();
@@ -23,5 +28,5 @@ public:
 	int count();
 	void train(Matrix & m, vector<int> columns);
 	virtual void train(Matrix & m);
-	virtual vector<int> classify(vector<double> & row);
+	virtual vector<double> classify(vector<double> & row);
 };

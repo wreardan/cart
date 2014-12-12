@@ -96,3 +96,33 @@ std::vector<T> inline slice(std::vector<T> list, int start=0, int end=-1, int st
     }
     return result;
 }
+
+//http://www.thebrokendesk.com/post/zip-two-arrays-togeather-in-c/
+//Python-like zip functionality
+#include <algorithm>        // std::sort 
+#include <utility>          // std::pair
+
+/* generate an array of tuples [(A0,B0), (A1,B1), ...] */
+template<typename T>
+void zip(std::vector<T> &A, std::vector<T> &B, std::vector<std::pair<T,T> > &zipped){
+
+    for(unsigned int i=0; i<A.size(); i++){
+        zipped.push_back(std::make_pair(A[i], B[i]));
+    }
+}
+
+/* take the values from the sorted tuple array and assign them to the initial arrays */
+template<typename T>
+void unzip(std::vector<std::pair<T, T> > &zipped, std::vector<T> &A, std::vector<T> &B){
+
+    for(unsigned int i=0; i<A.size(); i++){
+        A[i] = zipped[i].first;
+        B[i] = zipped[i].second;
+    }
+}
+
+/* conditional to sort by the first element of the tuple */
+template<typename T>
+bool pairCompare(const std::pair<T, T>& firstElem, const std::pair<T, T>& secondElem) {
+      return firstElem.first < secondElem.first;
+}

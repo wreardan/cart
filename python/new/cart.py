@@ -11,6 +11,7 @@ from itertools import *
 from multiprocessing.pool import Pool
 from multiprocessing import cpu_count
 
+
 def gini_impurity(array):
     # Return 0 impurity for the empty set
     if len(array) == 0:
@@ -26,6 +27,7 @@ def gini_gain(array, splits):
     splits_impurity = sum([gini_impurity(split)*float(len(split))/len(array) for split in splits])
     return gini_impurity(array) - splits_impurity
 
+
 def weighted_gini_impurity(array, weights):
     if len(array) == 0:
         return 0.0
@@ -40,6 +42,7 @@ def weighted_gini_gain(array, splits, weights=CLASS_WEIGHTS):
     splits_impurity = sum([weighted_gini_impurity(split,weights)*float(len(split))/len(array) for split in splits])
     return weighted_gini_impurity(array,weights) - splits_impurity
 
+
 def entropy(array):
     # Return 0 entropy for the empty set
     if len(array) == 0:
@@ -49,11 +52,11 @@ def entropy(array):
     # Sum -p_i * log2(p_i)
     return sum([-p * log(p,2) for p in probabilities if p > 0.0])
 
-
 def information_gain(array, splits):
     # Average child entropy
     splits_entropy = sum([entropy(split)*float(len(split))/len(array) for split in splits])
     return entropy(array) - splits_entropy
+
 
 def max_p(array):
     probabilities = DiscreteRandomVariable(array).distribution
@@ -75,11 +78,12 @@ def normalize_square(array):
     pass
 
 
-GAIN_FUNCTION = weighted_gini_gain
-MINIMUM_GAIN = 0.001
+GAIN_FUNCTION = gini_gain
+MINIMUM_GAIN = 0.01
 MINIMUM_NUM_SAMPLES = 40
 PRUNE_OOB = 1.0
-BALANCED_CLASSIFIER = False
+BALANCED_CLASSIFIER = True
+WEIGHTED_CLASSIFIER = False
 N_FEATURES = 7
 N_TREES = 500
 P_SAMPLES = 1.0
@@ -119,6 +123,8 @@ class Matrix(list):
         return [row[index] for row in self]
 
     def rows(self, row_indices):
+        """Returns a subset of the matrix
+        based on row_indices - a list of row index"""
         m = Matrix()
         for index in row_indices:
             m.append(copy(self[index]))
@@ -133,6 +139,10 @@ class Matrix(list):
                 f.write('\t'.join(map(str,row)) + '\n')
 
     def split_on_value(self, column, value):
+        """Splits Matrix into two based on a value in column.
+        First Matrix is column<value
+        Second Matrix is column>=value
+        """
         lesser = Matrix()
         greater = Matrix()
         for row in self:
@@ -150,6 +160,11 @@ class Matrix(list):
 
 
 class Node():
+    """
+    The heart of the algorithm: the decision tree.
+    Can use various gain measures: gini, information_gain, weighted_gini, max_p
+    Caution: recursion in heavy use :)
+    """
     def __init__(self):
         self.left = None
         self.right = None
@@ -159,12 +174,17 @@ class Node():
         self.gain = None
 
     def size(self):
+        """Returns the size of the tree"""
         if self.left and self.right:
             return 1 + self.left.size() + self.right.size()
         return 1
 
     def dump(self, indent=' '):
+        """Dump the Tree to a string.
+        Indent should be any single character.
+        """
         if self.left and self.right:
+            assert(len(indent) > 0)
             print(indent + 'split node [%d]<%f gain: %f' % (self.split_column, self.split_value, self.gain))
             self.left.dump(indent + indent[0])
             self.right.dump(indent + indent[0])
@@ -173,11 +193,17 @@ class Node():
             print(indent + 'leaf node: ' + distr)
 
     def split(self, X, Y, splitval):
+        """utility function to split X,Y lists by value"""
         lesser = [y for x,y in zip(X, Y) if x < splitval]
         greater_equal = [y for x,y in zip(X, Y) if x >= splitval]
         return lesser, greater_equal
 
     def feature_splits(self, X, Y):
+        """Calculate possible split-values.
+        Sorts the X,Y values by X.
+        Next, finds points where class changes and use the median
+        between those two points
+        """
         split_values = []
         sorted_xy = sorted(zip(X, Y))
         for i in range(1, len(sorted_xy)):
@@ -187,6 +213,8 @@ class Node():
         return split_values
 
     def best_split(self, matrix, column_list, n_features):
+        """Find the best split based on variables in column_list
+        use number of features specified."""
         subset = sample(column_list, n_features)
         y = matrix.column(-1)
         max_gain = -1000000.0
@@ -203,19 +231,29 @@ class Node():
                     max_col = column
                     max_val = splitval
                     max_gain = gain
-        #print('best feature [%d]<%f with gain %f, len(%d)' % (max_col, max_val, max_gain, len(matrix)))
+        print('best feature [%d]<%f with gain %f, len(%d)' % (max_col, max_val, max_gain, len(matrix)))
         #print(best_rv.lower, best_rv.upper, best_rv.delta, max_val)
         #assert(max_val < best_rv.upper)
         return max_col, max_val, max_gain
 
     def save_class_distribution(self, matrix):
+        """Get the class distribution for the Matrix and save
+        as this node (leaf node)"""
         self.distribution = DiscreteRandomVariable(matrix.column(-1)).distribution
         # Apply weights
-        for i in range(len(self.distribution)):
-            self.distribution[i] *= CLASS_WEIGHTS[i]
+        if WEIGHTED_CLASSIFIER:
+            for i in range(len(self.distribution)):
+                self.distribution[i] *= CLASS_WEIGHTS[i]
         assert(len(self.distribution) > 0)
 
     def train(self, matrix, column_list, n_features=7, parent_gain=0.0):
+        """
+        Train the Classification Tree.
+        column_list: list of columns to train data
+        n_features: number of features to split on
+        parent_gain: dont touch this parameter (for recursive use depth>1)
+            its used make sure the tree doesn't get stuck in gain loops
+        """
         # Check for stopping criteria
         try:
             assert(len(column_list) > n_features)
@@ -243,6 +281,9 @@ class Node():
             self.save_class_distribution(matrix)
 
     def classify(self, row):
+        """classify sample of data row.
+        Returns the class distribution.
+        """
         if self.left and self.right:
             if row[self.split_column] < self.split_value:
                 return self.left.classify(row)
@@ -250,7 +291,16 @@ class Node():
                 return self.right.classify(row)
         return self.distribution
 
+
 class Forest():
+    """
+    Basic Random Forest Classifier
+
+    Training is done on all data
+
+    Classification is done with an unweighted average of the
+    tree distributions
+    """
     def __init__(self, n_trees=100, n_features=7):
         self.trees = []
         for _ in range(n_trees):
@@ -279,7 +329,8 @@ def max_index(x):
 
 
 def parallel_train(state):
-    # Get parameters
+    """Child process training function"""
+    # Unpack parameters
     matrix, columns, n_features, p_samples = state
     n_samples = int(len(matrix) * p_samples)
     oob_error = PRUNE_OOB
@@ -319,6 +370,10 @@ def parallel_train(state):
 
 
 class ParallelForest(Forest):
+    """Parallel extension of Random Forest algorithm
+    Creates child processes to train trees inside a Process Pool
+    Classification is done in serial from inherited method
+    """
     def __init__(self, n_trees=100, n_features=7, processes=0, p_samples=P_SAMPLES):
         self.n_trees = n_trees
         self.trees = []
@@ -337,6 +392,10 @@ class ParallelForest(Forest):
 
 
 def cross_fold_validation(matrix, classifier, args, n_folds=10):
+    """
+    Perform n-fold validation using classifier on matrix of data
+    Passes args into the classifier when calling __init__
+    """
     # Shuffle Matrix
     shuffle(matrix)
     # Train and Test in Folds
@@ -370,6 +429,7 @@ def cross_fold_validation(matrix, classifier, args, n_folds=10):
         print('fold %d completed' % fold)
     return zip(p_values, classes)
 
+
 def main():
     m = Matrix()
     m.load(sys.argv[1])
@@ -384,6 +444,7 @@ def main():
     with open(sys.argv[2], 'w') as f:
         for p, cls in aupr:
             f.write('%f\t%d\n' % (p, cls))
+
 
 if __name__ == '__main__':
     main()

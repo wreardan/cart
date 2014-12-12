@@ -114,15 +114,27 @@ void test_regression() {
 Convert a list of numbers into a class distribution
 */
 vector<int> list_to_discrete(const vector<double> & list, int num_classes) {
-	vector<int> int_list(list.begin(), list.end());
 	vector<int> classes(num_classes, 0);
-	for(int i = 0; i < int_list.size(); i++) {
-		int cls = int_list[i];
-		assert(cls > 0);
+	for(int i = 0; i < list.size(); i++) {
+		int cls = (int)list[i];
+		assert(cls >= 0);
 		assert(cls < num_classes);
 		classes[cls] += 1;
 	}
 	return classes;
+}
+
+vector<double> discrete_p_values(const vector<double> & list, int num_classes) {
+	//Convert list to discrete RV
+	vector<int> discrete = list_to_discrete(list, num_classes);
+	//Convert to probability values
+	vector<double> p_values;
+	for(int i = 0; i < num_classes; i++) {
+		int count = discrete[i];
+		double p = ((double) count) / list.size();
+		p_values.push_back(p);
+	} 
+	return p_values;
 }
 
 void add_counts(vector<int> & list1, vector<int> & list2) {
@@ -135,4 +147,57 @@ void add_counts(vector<int> & list1, vector<int> & list2) {
 	for(int i = 0; i < list1.size(); i++) {
 		list1[i] += list2[i];
 	}
+}
+
+//Returns the sum of p^2 when list of classes is converted to a Discrete Random Variable
+#include <cstdio>
+double gini_impurity(const vector<double> & classes, int num_classes) {
+	if(classes.size() == 0) {
+		return 0.0;
+	}
+	vector<double> p_values = discrete_p_values(classes, num_classes);
+	//printf("p_values[0]=%f, p_values[1]=%f\n", p_values[0], p_values[1]);
+	double result = 1.0;
+	for(int i = 0; i < p_values.size(); i++) {
+		double p = p_values[i];
+		result -= p * p;
+	}
+	return result;
+}
+double gini_gain(const vector<double> & parent_classes,
+				const vector<double> & child1_classes,
+				const vector<double> & child2_classes,
+				int num_classes) {
+	double children_impurity = 0.0;
+	children_impurity += gini_impurity(child1_classes, num_classes) * child1_classes.size() / parent_classes.size();
+	children_impurity += gini_impurity(child2_classes, num_classes) * child2_classes.size() / parent_classes.size();
+	double parent_impurity = gini_impurity(parent_classes, num_classes);
+	//printf("parent: %f, children: %f\n", parent_impurity, children_impurity);
+	return parent_impurity - children_impurity;
+}
+
+//Weighted Gini Impurity
+// multiply p by weight inside impurity calculation
+double weighted_gini_impurity(const vector<double> & classes,
+							const vector<double> & class_weights,
+							int num_classes) {
+	vector<double> p_values = discrete_p_values(classes, num_classes);
+	double result = 1.0;
+	for(int i = 0; i < p_values.size(); i++) {
+		double p = p_values[i];
+		double w = class_weights[i];
+		result -= (w*p) * (w*p);
+	}
+	return result;
+}
+
+double weighted_gini_gain(const vector<double> & parent_classes,
+				const vector<double> & child1_classes,
+				const vector<double> & child2_classes,
+				const vector<double> & class_weights,
+				int num_classes) {
+	double children_impurity = weighted_gini_impurity(child1_classes, class_weights, num_classes)
+		+ weighted_gini_impurity(child2_classes, class_weights, num_classes);
+	double parent_impurity = weighted_gini_impurity(parent_classes, class_weights, num_classes);
+	return parent_impurity - children_impurity;
 }
