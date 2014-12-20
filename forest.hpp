@@ -18,4 +18,5 @@ public:
 	void init(int n_trees, int n_features);
 	virtual void train(Matrix & m);
 	virtual int classify(vector<double> & row);
+	virtual double soft_classify(vector<double> & row);
 };

@@ -74,7 +74,7 @@ double train_and_test(Matrix & train, Matrix & testing) {
 	return percent;
 }
 
-void folded_train_and_test(Matrix & input_matrix, int n_folds) {
+void folded_train_and_test(Matrix & input_matrix, int n_folds, string & filename) {
 	Matrix result;
 	Matrix matrix = input_matrix.shuffled();
 	int R = matrix.rows();
@@ -119,7 +119,7 @@ void folded_train_and_test(Matrix & input_matrix, int n_folds) {
 	cout << rows.size() << "\t" << cols.size() << endl;
 	cout << result.rows() << "\t" << result.columns() << endl;
 	Matrix sub = result.submatrix(rows, cols);
-	sub.save("data/class_id.txt");
+	sub.save(filename.c_str());
 }
 
 void test_matrix(Matrix & m) {
@@ -154,7 +154,7 @@ int main(int argc, char *argv[]) {
 	char * cvalue = NULL;
 	int c;
 	string filename;
-	string test_filename;
+	string soft_labels_filename = "data/soft_labels.txt";
 	while((c = getopt(argc, argv, "t:c:p:n:f:g:")) != -1) {
 		switch(c) {
 
@@ -162,8 +162,8 @@ int main(int argc, char *argv[]) {
 		case 't': //training file
 			filename = optarg;
 			break;
-		case 'c': //data to classify
-			test_filename = optarg;
+		case 's': //output filename to write soft class labels
+			soft_labels_filename = optarg;
 			break;
 
 		//Optional arguments:
@@ -194,34 +194,8 @@ int main(int argc, char *argv[]) {
 	m.load(filename);
 	cout << "train matrix: " << m.rows() << " rows and " << m.columns() << " columns in matrix" << endl;
 
-	/*
-	//Testing matrix
-	Matrix test;
-	test.load(test_filename);
-	cout << "test matrix: " << test.rows() << " rows and " << test.columns() << " columns in matrix" << endl;
-	*/
-
 	//Run classifiers
-	folded_train_and_test(m, 10);
-
-	//Debugging shizzle
-	/*
-	double c1[] = {0,0,0,0,0,1,1,1,1,1};
-	vector<double> classes1;
-	classes1.assign(c1,c1+10);
-
-	double c2[] = {0,0,0,0,0};
-	vector<double> classes2;
-	classes2.assign(c2,c2+5);
-
-	double c3[] = {1,1,1,1,1};
-	vector<double> classes3;
-	classes3.assign(c3,c3+5);
-
-	printf("gini impurities: %f, %f, %f\n", gini_impurity(classes1,2), gini_impurity(classes2,2), gini_impurity(classes3,2));
-	printf("gini gain: %f\n", gini_gain(classes1, classes2, classes3, 2));
-	//ugh gini gain is correct, what next?
-	*/
+	folded_train_and_test(m, 10, soft_labels_filename);
 
 	return 0;
 }

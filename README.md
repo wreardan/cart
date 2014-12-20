@@ -9,8 +9,8 @@ To run the program, use the following parameters:
 ## Required Parameters
 - -t training_file
     - input matrix file to train trees
-- -c data_to_classify
-    - matrix of data to classify
+- -s filename to write soft labels
+    - output of softlabels for output to AUPR program
 ## Optional Parameters
 - -p 16
     - use 16 threads in a thread pool to process trees
@@ -18,9 +18,10 @@ To run the program, use the following parameters:
     - use 1000 trees in the forest
 - -f 30
     - use a subset of 30 features for each tree
-- -m 0.1
+- -g 0.1
     - minimum gain of sum of squares to continue splitting
     - gain = sum_of_squares - (left_squares + right_squares)
+- -m
 
 # Class Descriptions
 - Matrix - 2d double data structure with utility functions

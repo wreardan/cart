@@ -43,6 +43,17 @@ int Forest::classify(vector<double> & row) {
 	for(int i = 0; i < n_trees; i++) {
 		TreeNode & tree = trees[i];
 		vector<double> distribution = tree.classify(row);
+		int count = tree.count();
+		printf("tree[%d].count() = %d \n", i, count);
 	}
 	return max_index(summed_distributions);
+}
+
+double Forest::soft_classify(vector<double> & row) {
+	vector<double> summed_distributions(2, 0.0);
+	for(int i = 0; i < n_trees; i++) {
+		TreeNode & tree = trees[i];
+		vector<double> distribution = tree.classify(row);
+	}
+	return summed_distributions[1];
 }
